@@ -7,6 +7,7 @@ Ein Aufruf-Deckel (``max_llm_calls_per_run``) verhindert weglaufende Experimente
 
 from __future__ import annotations
 
+import threading
 from dataclasses import dataclass
 from typing import Any, Protocol
 
@@ -42,6 +43,7 @@ class LlmClient:
         self._settings = settings or get_settings()
         self._sdk = sdk
         self.calls_made = 0
+        self._lock = threading.Lock()
 
     def _ensure_sdk(self) -> ChatSdk:
         if self._sdk is None:
@@ -60,12 +62,14 @@ class LlmClient:
         Raises:
             LlmError: Bei Budget-Ueberschreitung, SDK-Fehlern oder leerer Antwort.
         """
-        if self.calls_made >= self._settings.max_llm_calls_per_run:
-            raise LlmError(
-                ErrorCode.LLM_BUDGET_EXCEEDED,
-                context={"limit": self._settings.max_llm_calls_per_run},
-            )
-        sdk = self._ensure_sdk()
+        with self._lock:
+            if self.calls_made >= self._settings.max_llm_calls_per_run:
+                raise LlmError(
+                    ErrorCode.LLM_BUDGET_EXCEEDED,
+                    context={"limit": self._settings.max_llm_calls_per_run},
+                )
+            self.calls_made += 1
+            sdk = self._ensure_sdk()
         kwargs: dict[str, Any] = {
             "model": request.model or self._settings.llm_model,
             "messages": [
@@ -79,7 +83,6 @@ class LlmClient:
         if request.json_mode:
             kwargs["response_format"] = {"type": "json_object"}
 
-        self.calls_made += 1
         try:
             response = sdk.chat.completions.create(**kwargs)
         except Exception as exc:  # noqa: BLE001 - in LlmError uebersetzen
