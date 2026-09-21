@@ -37,6 +37,11 @@ class _FakeSdk:
         self.models = _FakeModels(list(model_ids))
 
 
+# Exceptions mit denselben Klassennamen wie im OpenAI-SDK (Mapping erfolgt per Name).
+class RateLimitError(Exception):
+    pass
+
+
 def _settings(**kw):
     return Settings(_env_file=None, **kw)
 
@@ -95,3 +100,46 @@ def test_call_budget_enforced():
 def test_list_model_ids_sorted():
     sdk = _FakeSdk(model_ids=["qwen", "llama-3.1", "mistral"])
     assert list_model_ids(sdk) == ["llama-3.1", "mistral", "qwen"]
+
+
+class _FlakyCompletions:
+    """Wirft n-mal RateLimitError, dann Erfolg."""
+
+    def __init__(self, failures: int, content: str):
+        self.failures, self._content, self.calls = failures, content, 0
+
+    def create(self, **kwargs):
+        self.calls += 1
+        if self.calls <= self.failures:
+            raise RateLimitError("slow down")
+        return SimpleNamespace(
+            choices=[SimpleNamespace(message=SimpleNamespace(content=self._content))]
+        )
+
+
+@pytest.mark.unit
+def test_rate_limit_is_retried_with_backoff(monkeypatch):
+    from promptner.llm import client as client_module
+
+    monkeypatch.setattr(client_module, "_BACKOFF_WAIT_SECONDS", 0)
+    flaky = _FlakyCompletions(failures=2, content="ok")
+    sdk = SimpleNamespace(chat=SimpleNamespace(completions=flaky), models=_FakeModels([]))
+    client = LlmClient(settings=_settings(), sdk=sdk)
+    assert client.complete(ChatRequest(system="s", user="u")) == "ok"
+    assert flaky.calls == 3
+    assert client.calls_made == 1  # ein logischer Aufruf, drei physische Versuche
+
+
+@pytest.mark.unit
+def test_rate_limit_gives_up_after_max_attempts(monkeypatch):
+    from promptner.llm import client as client_module
+
+    monkeypatch.setattr(client_module, "_BACKOFF_WAIT_SECONDS", 0)
+    monkeypatch.setattr(client_module, "_BACKOFF_ATTEMPTS", 2)
+    flaky = _FlakyCompletions(failures=5, content="ok")
+    sdk = SimpleNamespace(chat=SimpleNamespace(completions=flaky), models=_FakeModels([]))
+    client = LlmClient(settings=_settings(), sdk=sdk)
+    with pytest.raises(PromptNerError) as exc:
+        client.complete(ChatRequest(system="s", user="u"))
+    assert exc.value.code is ErrorCode.LLM_RATE_LIMITED
+    assert flaky.calls == 2

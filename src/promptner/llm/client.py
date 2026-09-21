@@ -11,11 +11,22 @@ import threading
 from dataclasses import dataclass
 from typing import Any, Protocol
 
+from tenacity import Retrying, retry_if_exception, stop_after_attempt, wait_exponential
+
 from promptner.config import get_logger
 from promptner.config.settings import Settings, get_settings
 from promptner.errors import ErrorCode, LlmError
 
 log = get_logger("llm.client")
+
+# Backoff-Parameter (Tests setzen sie per monkeypatch herab).
+_BACKOFF_ATTEMPTS = 5
+_BACKOFF_WAIT_SECONDS = 2
+_RETRYABLE = {"RateLimitError", "APIConnectionError", "APITimeoutError", "InternalServerError"}
+
+
+def _is_retryable(exc: BaseException) -> bool:
+    return type(exc).__name__ in _RETRYABLE
 
 
 class ChatSdk(Protocol):
@@ -84,7 +95,7 @@ class LlmClient:
             kwargs["response_format"] = {"type": "json_object"}
 
         try:
-            response = sdk.chat.completions.create(**kwargs)
+            response = self._create_with_backoff(sdk, kwargs)
         except Exception as exc:  # noqa: BLE001 - in LlmError uebersetzen
             code = (
                 ErrorCode.LLM_RATE_LIMITED
@@ -98,6 +109,24 @@ class LlmClient:
         if not content:
             raise LlmError(ErrorCode.LLM_EMPTY_RESPONSE)
         return content
+
+    @staticmethod
+    def _create_with_backoff(sdk: ChatSdk, kwargs: dict[str, Any]) -> Any:
+        """Wiederholt bei Rate-Limit/Verbindungsfehlern mit exponentiellem Backoff."""
+        retrying = Retrying(
+            retry=retry_if_exception(_is_retryable),
+            stop=stop_after_attempt(_BACKOFF_ATTEMPTS),
+            wait=wait_exponential(
+                multiplier=_BACKOFF_WAIT_SECONDS, min=_BACKOFF_WAIT_SECONDS, max=60
+            ),
+            reraise=True,
+        )
+        for attempt in retrying:
+            with attempt:
+                if attempt.retry_state.attempt_number > 1:
+                    log.warning("LLM-Anfrage: Versuch %d", attempt.retry_state.attempt_number)
+                return sdk.chat.completions.create(**kwargs)
+        raise RuntimeError("unreachable")  # pragma: no cover
 
 
 def list_model_ids(sdk: ChatSdk) -> list[str]:
