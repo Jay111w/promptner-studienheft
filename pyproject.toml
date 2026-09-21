@@ -1,0 +1,72 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "promptner-studienheft"
+version = "0.1.0"
+description = "Re-Implementierung von PromptNER (Ashok & Lipton, 2023) mit Ablationen; Studienheft-Korrektor als Anwendungs-Demo"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [
+    { name = "Joshua Amoah" },
+    { name = "Alireza Vahidinia" },
+]
+
+dependencies = [
+    # --- Wissenschaftlicher Kern (promptner) ---
+    "openai>=1.30",            # OpenAI-SDK, zeigt auf den KISSKI-Endpunkt
+    "pydantic>=2.6",           # Datenmodelle + LLM-Ausgabeschema
+    "pydantic-settings>=2.2",  # .env-Konfiguration
+    "python-dotenv>=1.0",
+    "datasets>=3.0",           # CoNLL-2003, GermEval 2014
+    "seqeval>=1.2",            # Span-Level P/R/F1
+    "pandas>=2.2",
+    "matplotlib>=3.9",
+    "typer>=0.12",             # CLI fuer Experimente
+    "tqdm>=4.66",
+    "tenacity>=9.0",           # Backoff bei Rate-Limits
+    "diskcache>=5.6",          # LLM-Antwort-Cache
+    # --- Demo (korrektor): PDF-Extraktion + Export ---
+    "PyMuPDF>=1.24",
+    "python-docx>=1.1",
+    "reportlab>=4.0",
+]
+
+[project.optional-dependencies]
+demo = ["PySide6>=6.6"]                                   # Desktop-Oberflaeche des Korrektors
+bert = ["torch>=2.4", "transformers>=4.44", "pytorch-crf>=0.7.2"]  # optionale BERT-Baseline (Phase 6)
+
+[dependency-groups]
+dev = ["pytest>=8.0", "pytest-cov>=5.0", "pytest-qt>=4.4", "ruff>=0.6"]
+
+[project.scripts]
+korrektor = "korrektor.app:main"
+promptner = "promptner.cli:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/promptner", "src/korrektor"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q --cov=promptner --cov=korrektor --cov-report=term-missing"
+pythonpath = ["src"]
+markers = [
+    "unit: schnelle, isolierte Tests",
+    "integration: Tests ueber mehrere Komponenten",
+    "live: braucht echten KISSKI-Key (standardmaessig uebersprungen)",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+ignore = ["E501"]  # Zeilenlaenge regelt ruff format
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["B011"]
+"src/korrektor/**" = ["UP042"]  # Demo-Code: (str, Enum) bewusst beibehalten

@@ -1,0 +1,8 @@
+# Einheitliche Zeilenenden im Repository (LF), unabhaengig vom Betriebssystem.
+* text=auto eol=lf
+
+# Binaerdateien nicht anfassen.
+*.pdf binary
+*.docx binary
+*.png binary
+*.jpg binary

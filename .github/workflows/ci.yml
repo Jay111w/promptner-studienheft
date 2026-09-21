@@ -1,0 +1,44 @@
+# Fuehrt bei jedem Push und Pull Request Lint und Tests aus (ohne LLM-Key).
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+jobs:
+  test:
+    name: Lint + Tests (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: uv einrichten
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Python einrichten
+        run: uv python install ${{ matrix.python-version }}
+
+      - name: Systemabhaengigkeiten fuer Qt (headless, nur Demo-Tests)
+        run: sudo apt-get update && sudo apt-get install -y libegl1 libgl1
+
+      - name: Abhaengigkeiten installieren
+        run: uv sync --extra demo --python ${{ matrix.python-version }}
+
+      - name: Lint
+        run: |
+          uv run ruff check src tests
+          uv run ruff format --check src tests
+
+      - name: Tests (Fake-LLM, kein Key)
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: uv run pytest -m "not live"

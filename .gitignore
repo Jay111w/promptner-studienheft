@@ -1,0 +1,44 @@
+# --- Geheimnisse: NIEMALS committen ---
+.env
+.env.*
+!.env.example
+
+# --- Ausgabe / verarbeitete Dokumente (keine sensiblen Inhalte ins Repo) ---
+/output/
+*.pdf
+*.docx
+!tests/fixtures/*.pdf
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+env/
+
+# --- Tests / Coverage ---
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# --- Logs ---
+*.log
+/logs/
+
+# --- IDE / OS ---
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# --- promptner ---
+.cache/
+/results/*.csv
+/results/*.png
+!/results/.gitkeep
