@@ -41,4 +41,4 @@ jobs:
       - name: Tests (Fake-LLM, kein Key)
         env:
           QT_QPA_PLATFORM: offscreen
-        run: uv run pytest -m "not live"
+        run: uv run pytest -m "not live and not network"
