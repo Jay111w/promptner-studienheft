@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (
     QMainWindow,
     QMessageBox,
     QSplitter,
+    QTabWidget,
     QToolBar,
     QVBoxLayout,
     QWidget,
@@ -25,10 +26,11 @@ from PySide6.QtWidgets import (
 from korrektor.config import get_logger
 from korrektor.ui.view_models import AppController
 from korrektor.ui.widgets.correction_panel import CorrectionPanel
+from korrektor.ui.widgets.entity_panel import EntityPanel
 from korrektor.ui.widgets.page_range_dialog import PageRangeDialog
 from korrektor.ui.widgets.pdf_viewer import PdfViewer
 from korrektor.ui.widgets.status_bar import StatusBar
-from korrektor.ui.workers import AnalysisWorker
+from korrektor.ui.workers import AnalysisWorker, EntityWorker
 
 log = get_logger("ui.main_window")
 
@@ -40,7 +42,7 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.controller = controller or AppController()
         self._thread: QThread | None = None
-        self._worker: AnalysisWorker | None = None
+        self._worker: AnalysisWorker | EntityWorker | None = None
 
         self.setWindowTitle("Studienheft-Korrektor")
         self.resize(1000, 640)
@@ -57,6 +59,7 @@ class MainWindow(QMainWindow):
         self._act_open = toolbar.addAction("PDF laden", self.open_pdf)
         self._act_analyze = toolbar.addAction("Analyse starten", self.start_analysis)
         self._act_export = toolbar.addAction("Exportieren", self.export_results)
+        self._act_entities = toolbar.addAction("Entitaeten extrahieren", self.start_entities)
 
     def _build_central(self) -> None:
         central = QWidget()
@@ -72,9 +75,14 @@ class MainWindow(QMainWindow):
         self.panel.approve_all_requested.connect(self._on_approve_all)
         self.panel.selection_changed.connect(self._on_selection)
 
+        self.entity_panel = EntityPanel()
+        self.tabs = QTabWidget()
+        self.tabs.addTab(self.panel, "Korrekturen")
+        self.tabs.addTab(self.entity_panel, "Entitaeten (PromptNER)")
+
         splitter = QSplitter(Qt.Horizontal)
         splitter.addWidget(self.viewer)
-        splitter.addWidget(self.panel)
+        splitter.addWidget(self.tabs)
         splitter.setStretchFactor(0, 3)
         splitter.setStretchFactor(1, 4)
         layout.addWidget(splitter, stretch=1)
@@ -117,6 +125,35 @@ class MainWindow(QMainWindow):
         self._worker.finished.connect(self._on_analysis_finished)
         self._worker.failed.connect(self._on_analysis_failed)
         self._thread.start()
+        self._refresh_status()
+
+    def start_entities(self) -> None:
+        """Demo-Modus: PromptNER ueber einen Seitenbereich, Ergebnis als Tabelle."""
+        if self.controller.document_info is None or self.controller.source_path is None:
+            return
+        dialog = PageRangeDialog(self.controller.document_info.page_count, self)
+        if not dialog.exec():
+            return
+        self._set_busy(True)
+        self._thread = QThread()
+        self._worker = EntityWorker(str(self.controller.source_path), dialog.page_range())
+        self._worker.moveToThread(self._thread)
+        self._thread.started.connect(self._worker.run)
+        self._worker.progress.connect(self._on_entity_progress)
+        self._worker.finished.connect(self._on_entities_finished)
+        self._worker.failed.connect(self._on_analysis_failed)
+        self._thread.start()
+        self.tabs.setCurrentWidget(self.entity_panel)
+
+    def _on_entity_progress(self, done: int, total: int) -> None:
+        self._info_label.setText(f"Entitaeten: Satz {done} von {total} ...")
+
+    def _on_entities_finished(self, hits: list) -> None:
+        self._teardown_thread()
+        self._set_busy(False)
+        self.entity_panel.set_hits(hits)
+        self.tabs.setCurrentWidget(self.entity_panel)
+        self._info_label.setText(f"Entitaeten extrahiert: {len(hits)} Treffer.")
         self._refresh_status()
 
     def export_results(self) -> None:
@@ -191,11 +228,13 @@ class MainWindow(QMainWindow):
         self._act_open.setEnabled(not busy)
         self._act_analyze.setEnabled(not busy)
         self._act_export.setEnabled(not busy)
+        self._act_entities.setEnabled(not busy)
 
     def _update_actions_enabled(self) -> None:
         has_doc = self.controller.document_info is not None
         self._act_analyze.setEnabled(has_doc)
         self._act_export.setEnabled(has_doc)
+        self._act_entities.setEnabled(has_doc)
 
     def _refresh_status(self) -> None:
         self.status_widget.update_status(self.controller.status)
