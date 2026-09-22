@@ -6,6 +6,7 @@
 # --- Ausgabe / verarbeitete Dokumente (keine sensiblen Inhalte ins Repo) ---
 /output/
 *.pdf
+!results/figures/*.pdf
 *.docx
 !tests/fixtures/*.pdf
 

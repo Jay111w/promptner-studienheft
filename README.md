@@ -66,6 +66,10 @@ Sätze kosten −10). Ein Lauf ≈ 75 Aufrufe.
 
 ## Eigenes Sample (Studienheft)
 
+Das Studienheft-PDF selbst wird **nicht** versioniert (`*.pdf` in `.gitignore`) – nur die
+daraus erzeugte, annotierte JSONL. Die Abbildungen unter `results/figures/` sind davon
+ausgenommen.
+
 ```bash
 uv run scripts/annotate_template.py heft.pdf --pages 5-12 --out data/studienheft/raw.jsonl
 # annotieren nach data/studienheft/ANNOTATION.md -> data/studienheft/gold.jsonl
