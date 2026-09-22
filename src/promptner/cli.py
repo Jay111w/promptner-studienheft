@@ -108,6 +108,35 @@ def plots() -> None:
 
 
 @app.command()
+def errors(
+    run: Annotated[str, typer.Option(help="run_id unter results/runs/ oder Pfad zum Lauf-Ordner")],
+    examples: Annotated[int, typer.Option(help="Beispielsaetze im Bericht")] = 10,
+    out: Annotated[
+        str | None, typer.Option(help="Zieldatei; Standard results/errors/<run_id>.md")
+    ] = None,
+) -> None:
+    """Fehleranalyse eines Laufs: Verwechslungsmatrix, Grenzfehler, Halluzinationen, Beispiele."""
+    from promptner.eval.error_analysis import analyze_run, render_markdown
+
+    s = get_settings()
+    run_dir = Path(run) if Path(run).is_dir() else Path(s.results_dir) / "runs" / run
+    if not (run_dir / "predictions.jsonl").is_file():
+        typer.echo(f"Kein Lauf unter {run_dir}")
+        raise typer.Exit(code=1)
+    rep = analyze_run(run_dir)
+    target = Path(out) if out else Path(s.results_dir) / "errors" / f"{rep.run_id}.md"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(render_markdown(rep, max_examples=examples), encoding="utf-8")
+    for kind in ("correct", "type", "boundary", "boundary+type", "missed", "spurious"):
+        typer.echo(f"  {kind:14s} {rep.counts.get(kind, 0)}")
+    typer.echo(
+        f"  halluziniert {rep.n_unmatched} | unbekannter Typ {rep.n_unknown_type} | "
+        f"Format-Fehler {rep.n_parse_fail} | Retries {rep.n_retries}"
+    )
+    typer.echo(f"-> {target}")
+
+
+@app.command()
 def models() -> None:
     """Listet die am Endpunkt verfuegbaren Modelle (braucht KISSKI_API_KEY)."""
     from openai import OpenAI
