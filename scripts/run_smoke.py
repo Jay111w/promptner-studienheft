@@ -35,7 +35,7 @@ def main(
         str | None, typer.Option(help="Modell-ID am Endpunkt; Standard aus .env")
     ] = None,
     k: Annotated[int, typer.Option(help="Few-Shot-Beispiele: 0, 2, 5, 10")] = 5,
-    paragraph: Annotated[int, typer.Option(help="Saetze je Aufruf (1-10)")] = 5,
+    paragraph: Annotated[int, typer.Option(help="Saetze je Aufruf (1-10)")] = 2,
     workers: Annotated[int | None, typer.Option()] = None,
 ) -> None:
     s = get_settings()

@@ -28,8 +28,9 @@ class PromptConfig(BaseModel):
     output_format: OutputFormat = "text"
     seed: int = 1
     max_retries: int = Field(default=1, ge=0, le=3)
-    # Saetze je Aufruf ("Paragraph" im Paper). Schont das KISSKI-Budget (200/h, 3000/Monat).
-    paragraph_size: int = Field(default=5, ge=1, le=10)
+    # Saetze je Aufruf ("Paragraph" im Paper). Gemessen auf 100 CoNLL-Dev-Saetzen, Llama 8B:
+    # p1 F1 .820 | p2 .815 | p3 .799 | p5 .722 -> 2 halbiert das KISSKI-Budget fast ohne Verlust.
+    paragraph_size: int = Field(default=2, ge=1, le=10)
 
     def short_name(self) -> str:
         return (

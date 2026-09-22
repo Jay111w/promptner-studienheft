@@ -26,8 +26,8 @@ def run(
     models: Annotated[
         str | None, typer.Option(help="Kommagetrennte Modell-IDs; Standard: LLM_MODEL aus .env")
     ] = None,
-    seeds: Annotated[str, typer.Option(help="Kommagetrennt, z. B. 1,2,3")] = "1,2,3",
-    limit: Annotated[int | None, typer.Option(help="Saetze je Lauf (None = alle)")] = 300,
+    seeds: Annotated[str, typer.Option(help="Kommagetrennt, z. B. 1,2,3")] = "1,2",
+    limit: Annotated[int | None, typer.Option(help="Saetze je Lauf (None = alle)")] = 150,
     datasets: Annotated[str | None, typer.Option(help="Nur E1/E2: kommagetrennt")] = None,
     workers: Annotated[int | None, typer.Option()] = None,
     dry_run: Annotated[bool, typer.Option("--dry-run", help="Nur Laeufe auflisten")] = False,

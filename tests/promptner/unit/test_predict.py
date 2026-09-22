@@ -143,5 +143,5 @@ def test_paragraph_size_one_equals_sentence_mode():
 
 @pytest.mark.unit
 def test_paragraph_size_in_short_name():
-    assert PromptConfig(dataset="conll2003").short_name().endswith("_s1_p5")
+    assert PromptConfig(dataset="conll2003").short_name().endswith("_s1_p2")
     assert PromptConfig(dataset="conll2003", paragraph_size=1).short_name().endswith("_s1_p1")

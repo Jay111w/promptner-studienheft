@@ -42,7 +42,7 @@ def test_e3_models_and_e2_datasets():
 def test_run_id_contains_all_dimensions():
     (spec,) = build_experiment("E4", models=["llama-3.1-8b"], seeds=[7], limit=5)[:1]
     assert spec.run_id.startswith("E4__conll2003-validation-5__llama-3.1-8b__conll2003_def")
-    assert spec.run_id.endswith("_s7_p5")
+    assert spec.run_id.endswith("_s7_p2")
 
 
 @pytest.mark.unit
