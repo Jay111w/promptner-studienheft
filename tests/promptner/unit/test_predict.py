@@ -90,3 +90,58 @@ def test_cache_avoids_second_call(tmp_path):
     client2 = _ScriptedClient([GOOD])
     predict_sentence(SENT, CFG, client2, cache=cache, model="other")
     assert client2.calls_made == 1
+
+
+# --- Absatz-Buendelung: mehrere Saetze je Aufruf (Paper: "Paragraph"), Budget-Schonung ---
+
+PARA = [
+    Sentence(id="p1", tokens=["Ohio", "is", "big", "."]),
+    Sentence(id="p2", tokens=["Paris", "too", "."]),
+    Sentence(id="p3", tokens=["Nothing", "here", "."]),
+]
+PARA_ANSWER = (
+    "1. Ohio | True | a state (location)\n"
+    "2. Paris | True | a city (location)\n"
+    "3. Nothing | False | pronoun\n"
+    "4. Mars | True | not in text (location)"
+)
+
+
+@pytest.mark.unit
+def test_paragraph_batches_sentences_into_one_call_and_splits_spans():
+    cfg = PromptConfig(dataset="conll2003", k_examples=2, paragraph_size=3)
+    client = _ScriptedClient([PARA_ANSWER])
+    preds = predict_many(PARA, cfg, client, workers=1)
+    assert client.calls_made == 1
+    assert "Paragraph: Ohio is big . Paris too . Nothing here ." in client.requests[0].user
+    assert [p.sentence_id for p in preds] == ["p1", "p2", "p3"]
+    assert preds[0].spans == [Span(start=0, end=1, label="LOC")]
+    assert preds[1].spans == [Span(start=0, end=1, label="LOC")]  # Offset zurueckgerechnet
+    assert preds[2].spans == []
+    # Diagnosewerte nur einmal je Absatz (beim ersten Satz), sonst doppelt gezaehlt
+    assert preds[0].n_unmatched == 1 and preds[1].n_unmatched == 0
+    assert all(p.parse_ok for p in preds) and all(p.raw == PARA_ANSWER for p in preds)
+
+
+@pytest.mark.unit
+def test_paragraph_parse_failure_marks_every_sentence():
+    cfg = PromptConfig(dataset="conll2003", k_examples=2, paragraph_size=3, max_retries=0)
+    preds = predict_many(
+        PARA, PromptConfig(**cfg.model_dump()), _ScriptedClient(["garbage"]), workers=1
+    )
+    assert [p.parse_ok for p in preds] == [False, False, False]
+    assert all(p.spans == [] for p in preds)
+
+
+@pytest.mark.unit
+def test_paragraph_size_one_equals_sentence_mode():
+    cfg = PromptConfig(dataset="conll2003", k_examples=2, paragraph_size=1)
+    client = _ScriptedClient([GOOD, "None", "None"])
+    preds = predict_many([SENT, PARA[1], PARA[2]], cfg, client, workers=1)
+    assert client.calls_made == 3 and preds[0].spans[0].label == "LOC"
+
+
+@pytest.mark.unit
+def test_paragraph_size_in_short_name():
+    assert PromptConfig(dataset="conll2003").short_name().endswith("_s1_p5")
+    assert PromptConfig(dataset="conll2003", paragraph_size=1).short_name().endswith("_s1_p1")

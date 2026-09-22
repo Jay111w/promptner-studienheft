@@ -1,4 +1,7 @@
-"""Ein Satz -> Prompt -> LLM -> Kandidaten -> Spans, mit Retry-Schleife.
+"""Absatz (1-10 Saetze) -> Prompt -> LLM -> Kandidaten -> Spans je Satz, mit Retry-Schleife.
+
+Mehrere Saetze werden zu einem "Paragraph" (Figure 1) verkettet und in einem Aufruf
+gefragt; die gefundenen Spans werden ueber Token-Offsets auf die Saetze zurueckverteilt.
 
 Bei Formatbruch (``ParseError``) wird einmal erneut gefragt, mit dem Hinweis auf
 das erwartete Format (Agentic-Retry-Muster aus Woche 10). Scheitert auch das,
@@ -12,7 +15,7 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
 
 from promptner.config import get_logger
-from promptner.domain import Prediction, PromptConfig, Sentence
+from promptner.domain import Prediction, PromptConfig, Sentence, Span
 from promptner.errors import ParseError
 from promptner.llm.cache import ResponseCache, cache_key
 from promptner.llm.client import ChatRequest, LlmClient
@@ -48,15 +51,38 @@ def _ask(
     return raw
 
 
-def predict_sentence(
-    sentence: Sentence,
+def _merge(sentences: list[Sentence]) -> tuple[Sentence, list[int]]:
+    """Verkettet Saetze zu einem Absatz; liefert auch die Token-Offsets je Satz."""
+    tokens: list[str] = []
+    offsets: list[int] = []
+    for s in sentences:
+        offsets.append(len(tokens))
+        tokens.extend(s.tokens)
+    return Sentence(id="+".join(s.id for s in sentences), tokens=tokens), offsets
+
+
+def _split_spans(spans: list[Span], offsets: list[int], lengths: list[int]) -> list[list[Span]]:
+    """Absatz-Spans auf Saetze verteilen; Spans ueber Satzgrenzen werden verworfen."""
+    out: list[list[Span]] = [[] for _ in offsets]
+    for sp in spans:
+        for i, (off, n) in enumerate(zip(offsets, lengths, strict=True)):
+            if off <= sp.start and sp.end <= off + n:
+                out[i].append(Span(start=sp.start - off, end=sp.end - off, label=sp.label))
+                break
+    return out
+
+
+def predict_paragraph(
+    sentences: list[Sentence],
     config: PromptConfig,
     client: LlmClient,
     *,
     cache: ResponseCache | None = None,
     model: str | None = None,
-) -> Prediction:
-    request = build_prompt(config, sentence)
+) -> list[Prediction]:
+    """Ein LLM-Aufruf fuer 1..n Saetze; eine Prediction je Satz, Diagnosewerte beim ersten."""
+    paragraph, offsets = _merge(sentences)
+    request = build_prompt(config, paragraph)
     if model is not None:
         request = replace(request, model=model)
     raw = ""
@@ -69,26 +95,44 @@ def predict_sentence(
         except ParseError as exc:
             if retries >= config.max_retries:
                 log.warning(
-                    "Satz %s: Antwort unparsebar nach %d Versuch(en): %s",
-                    sentence.id,
+                    "Absatz %s: Antwort unparsebar nach %d Versuch(en): %s",
+                    paragraph.id,
                     retries + 1,
                     exc.message,
                 )
-                return Prediction(sentence_id=sentence.id, raw=raw, parse_ok=False, retries=retries)
+                return [
+                    Prediction(sentence_id=s.id, raw=raw, parse_ok=False, retries=retries)
+                    for s in sentences
+                ]
             retries += 1
             hint = _RETRY_HINT[config.output_format]
             request = replace(request, user=f"{request.user}\n\n{hint}")
-    spans, unmatched, unknown = align(sentence, candidates, config.dataset)
-    return Prediction(
-        sentence_id=sentence.id,
-        spans=spans,
-        candidates=candidates,
-        raw=raw,
-        parse_ok=True,
-        retries=retries,
-        n_unmatched=unmatched,
-        n_unknown_type=unknown,
-    )
+    spans, unmatched, unknown = align(paragraph, candidates, config.dataset)
+    per_sentence = _split_spans(spans, offsets, [len(s.tokens) for s in sentences])
+    return [
+        Prediction(
+            sentence_id=s.id,
+            spans=sp,
+            candidates=candidates,
+            raw=raw,
+            parse_ok=True,
+            retries=retries,
+            n_unmatched=unmatched if i == 0 else 0,
+            n_unknown_type=unknown if i == 0 else 0,
+        )
+        for i, (s, sp) in enumerate(zip(sentences, per_sentence, strict=True))
+    ]
+
+
+def predict_sentence(
+    sentence: Sentence,
+    config: PromptConfig,
+    client: LlmClient,
+    *,
+    cache: ResponseCache | None = None,
+    model: str | None = None,
+) -> Prediction:
+    return predict_paragraph([sentence], config, client, cache=cache, model=model)[0]
 
 
 def predict_many(
@@ -101,15 +145,20 @@ def predict_many(
     model: str | None = None,
     on_progress=None,
 ) -> list[Prediction]:
-    """Vorhersagen fuer viele Saetze, Reihenfolge bleibt erhalten."""
+    """Vorhersagen fuer viele Saetze, je ``paragraph_size`` Saetze pro Aufruf; Reihenfolge bleibt."""
+    n = config.paragraph_size
+    chunks = [sentences[i : i + n] for i in range(0, len(sentences), n)]
 
-    def _one(s: Sentence) -> Prediction:
-        p = predict_sentence(s, config, client, cache=cache, model=model)
+    def _one(chunk: list[Sentence]) -> list[Prediction]:
+        preds = predict_paragraph(chunk, config, client, cache=cache, model=model)
         if on_progress is not None:
-            on_progress()
-        return p
+            for _ in chunk:
+                on_progress()
+        return preds
 
     if workers <= 1:
-        return [_one(s) for s in sentences]
-    with ThreadPoolExecutor(max_workers=workers) as pool:
-        return list(pool.map(_one, sentences))
+        results = [_one(c) for c in chunks]
+    else:
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            results = list(pool.map(_one, chunks))
+    return [p for preds in results for p in preds]

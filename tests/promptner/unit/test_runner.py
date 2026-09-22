@@ -44,7 +44,7 @@ def spec(monkeypatch):
         "validation",
         2,
         "fake-model",
-        PromptConfig(dataset="conll2003", k_examples=2),
+        PromptConfig(dataset="conll2003", k_examples=2, paragraph_size=1),
     )
 
 

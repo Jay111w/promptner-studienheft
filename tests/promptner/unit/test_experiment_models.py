@@ -11,7 +11,7 @@ def test_default_config_is_full_promptner():
     c = PromptConfig(dataset="conll2003")
     assert c.use_definition and c.use_cot and c.use_candidates
     assert c.k_examples == 5 and c.output_format == "text" and c.seed == 1
-    assert c.short_name() == "conll2003_def1_k5_cot1_cand1_text_s1"
+    assert c.short_name() == "conll2003_def1_k5_cot1_cand1_text_s1_p5"
 
 
 @pytest.mark.unit
@@ -25,7 +25,7 @@ def test_short_name_reflects_flags():
         output_format="json",
         seed=3,
     )
-    assert c.short_name() == "germeval14_def0_k0_cot0_cand0_json_s3"
+    assert c.short_name() == "germeval14_def0_k0_cot0_cand0_json_s3_p5"
 
 
 @pytest.mark.unit

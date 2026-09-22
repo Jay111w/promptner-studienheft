@@ -28,12 +28,14 @@ class PromptConfig(BaseModel):
     output_format: OutputFormat = "text"
     seed: int = 1
     max_retries: int = Field(default=1, ge=0, le=3)
+    # Saetze je Aufruf ("Paragraph" im Paper). Schont das KISSKI-Budget (200/h, 3000/Monat).
+    paragraph_size: int = Field(default=5, ge=1, le=10)
 
     def short_name(self) -> str:
         return (
             f"{self.dataset}_def{int(self.use_definition)}_k{self.k_examples}"
             f"_cot{int(self.use_cot)}_cand{int(self.use_candidates)}"
-            f"_{self.output_format}_s{self.seed}"
+            f"_{self.output_format}_s{self.seed}_p{self.paragraph_size}"
         )
 
 
