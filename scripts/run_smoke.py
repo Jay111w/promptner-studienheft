@@ -35,12 +35,13 @@ def main(
         str | None, typer.Option(help="Modell-ID am Endpunkt; Standard aus .env")
     ] = None,
     k: Annotated[int, typer.Option(help="Few-Shot-Beispiele: 0, 2, 5, 10")] = 5,
+    paragraph: Annotated[int, typer.Option(help="Saetze je Aufruf (1-10)")] = 5,
     workers: Annotated[int | None, typer.Option()] = None,
 ) -> None:
     s = get_settings()
     setup_logging(level=s.log_level, log_dir=s.log_dir)
     model_id = model or s.llm_model
-    config = PromptConfig(dataset=dataset, k_examples=k)  # type: ignore[arg-type]
+    config = PromptConfig(dataset=dataset, k_examples=k, paragraph_size=paragraph)  # type: ignore[arg-type]
     sentences = load_by_name(dataset, split, limit=limit)  # type: ignore[arg-type]
     client = LlmClient(settings=s)
     cache = ResponseCache(Path(s.cache_dir))
