@@ -61,7 +61,7 @@ def variant_label(row: pd.Series) -> str:
         return f"{row['output_format']}, retry={'an' if row['max_retries'] else 'aus'}"
     if exp == "E10":
         return f"p={row['paragraph_size']}"
-    n = row["limit"] if pd.notna(row["limit"]) else "all"
+    n = int(row["limit"]) if pd.notna(row["limit"]) else "all"
     return f"{row['dataset']}-{row['split']}-{n}/{row['model']}"
 
 
