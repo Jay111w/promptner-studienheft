@@ -33,10 +33,15 @@ class PromptConfig(BaseModel):
     paragraph_size: int = Field(default=2, ge=1, le=10)
 
     def short_name(self) -> str:
+        """Eindeutiger Kurzname: **jede** Dimension, nach der aggregiert wird, kommt vor.
+
+        Fehlt eine, teilen sich zwei Konfigurationen einen Lauf-Ordner und die zweite wird
+        beim Resume als "bereits vorhanden" uebersprungen (passiert mit ``max_retries`` in E8).
+        """
         return (
             f"{self.dataset}_def{int(self.use_definition)}_k{self.k_examples}"
             f"_cot{int(self.use_cot)}_cand{int(self.use_candidates)}"
-            f"_{self.output_format}_s{self.seed}_p{self.paragraph_size}"
+            f"_{self.output_format}_rt{self.max_retries}_s{self.seed}_p{self.paragraph_size}"
         )
 
 
