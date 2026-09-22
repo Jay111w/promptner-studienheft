@@ -39,6 +39,5 @@ Thumbs.db
 
 # --- promptner ---
 .cache/
-/results/*.csv
-/results/*.png
+/results/smoke_*.csv
 !/results/.gitkeep
