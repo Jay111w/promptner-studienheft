@@ -23,8 +23,9 @@ def main(
     epochs: Annotated[int, typer.Option()] = 3,
     seed: Annotated[int, typer.Option()] = 1,
     train_limit: Annotated[int, typer.Option(help="0 = alle 14k Saetze")] = 0,
-    eval_split: Annotated[str, typer.Option(help="validation | test")] = "validation",
-    eval_limit: Annotated[int, typer.Option(help="0 = alle")] = 150,
+    eval: Annotated[
+        str, typer.Option(help="Split:Limit, kommagetrennt; 0 = alle")
+    ] = "validation:150,test:0",
     model: Annotated[str, typer.Option()] = "bert-base-cased",
 ) -> None:
     s = get_settings()
@@ -34,15 +35,17 @@ def main(
         epochs=epochs,
         seed=seed,
         train_limit=train_limit or None,
-        eval_split=eval_split,
-        eval_limit=eval_limit or None,
+        eval_splits=tuple(
+            (part.split(":")[0], int(part.split(":")[1]) or None) for part in eval.split(",")
+        ),
     )
-    summary = train_and_evaluate(cfg, results_dir=s.results_dir)
-    typer.echo(
-        f"F1={summary['f1']:.4f} P={summary['precision']:.4f} R={summary['recall']:.4f} | "
-        f"{summary['n_sentences']} Saetze | Training {summary['elapsed_s']}s auf {summary['device']}"
-    )
-    typer.echo(f"-> results/runs/{summary['run_id']}")
+    for summary in train_and_evaluate(cfg, results_dir=s.results_dir):
+        typer.echo(
+            f"{summary['split']}: F1={summary['f1']:.4f} P={summary['precision']:.4f} "
+            f"R={summary['recall']:.4f} | {summary['n_sentences']} Saetze | "
+            f"Training {summary['elapsed_s']}s auf {summary['device']}"
+        )
+        typer.echo(f"-> results/runs/{summary['run_id']}")
 
 
 if __name__ == "__main__":
