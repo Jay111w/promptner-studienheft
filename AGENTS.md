@@ -51,3 +51,9 @@ Bewertet wird **Verständnis der Methode + Qualität der Experimente**, nicht Co
 NER = Named Entity Recognition: Spans im Satz als PER/LOC/ORG/MISC (CoNLL) bzw. PER/LOC/ORG/OTH (GermEval) markieren.
 PromptNER = das LLM bekommt Typ-Definitionen + k Beispiele mit Begründung, listet Kandidaten und entscheidet je Kandidat;
 wir messen Span-Level-F1 (seqeval, strict, IOB2) und variieren Definitionen / Begründungen / k / Modell / Datensatz.
+
+## Dokumentation, die mitlaufen muss
+
+- `docs/LOGBUCH.md`: Jeder Befund aus echten Läufen (Zahlen!) und jede Entscheidung mit Begründung
+  bekommt einen datierten Eintrag. Das ist das Rohmaterial für den Bericht.
+- `../CODING_PLAN.md` §0: Status-Tabelle und „nächste Befehle" nach jeder Phase aktualisieren.
