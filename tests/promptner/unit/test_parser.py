@@ -157,3 +157,34 @@ def test_align_handles_punctuation_attached():
     ]
     spans, unmatched, _ = align(s, cands, "conll2003")
     assert spans == [Span(start=0, end=1, label="LOC"), Span(start=2, end=3, label="LOC")]
+
+
+@pytest.mark.unit
+def test_align_finds_all_case_variants_but_not_lowercase_words():
+    # Kandidat aus Ueberschrift ("LEICESTERSHIRE") muss auch "Leicestershire" im Text treffen;
+    # "Such" (Nachname) darf aber nicht das Wort "such" matchen.
+    sent = Sentence(
+        id="p",
+        tokens=[
+            "LEICESTERSHIRE",
+            "won",
+            ".",
+            "Leicestershire",
+            "and",
+            "Such",
+            "played",
+            "such",
+            "games",
+        ],
+    )
+    cands = [
+        Candidate(text="LEICESTERSHIRE", is_entity=True, type_name="organisation"),
+        Candidate(text="Such", is_entity=True, type_name="person"),
+    ]
+    spans, unmatched, _ = align(sent, cands, "conll2003")
+    assert [(s.start, s.end, s.label) for s in spans] == [
+        (0, 1, "ORG"),
+        (3, 4, "ORG"),
+        (5, 6, "PER"),
+    ]
+    assert unmatched == 0

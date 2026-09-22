@@ -146,11 +146,17 @@ def align(
         needle = _tokenize_candidate(c.text)
         while needle and needle[-1] in {",", ".", ";", ":", "!", "?"}:
             needle = needle[:-1]  # angehaengte Satzzeichen ignorieren
-        hits = _find_all(tokens, needle) or _find_all(lower, [t.lower() for t in needle])
+        # Exakte Treffer plus Groß/Klein-Varianten (Überschrift "LEICESTERSHIRE" vs. Text
+        # "Leicestershire"); tolerante Treffer nur, wenn das Token wie ein Name beginnt
+        # (grossgeschrieben oder Ziffer), sonst wuerde "Such" (PER) das Wort "such" treffen.
+        hits = set(_find_all(tokens, needle))
+        for a, b in _find_all(lower, [t.lower() for t in needle]):
+            if not tokens[a][0].islower():
+                hits.add((a, b))
         if not hits:
             unmatched += 1
             continue
-        found.extend(Span(start=a, end=b, label=label) for a, b in hits)
+        found.extend(Span(start=a, end=b, label=label) for a, b in sorted(hits))
     # Ueberlappungen aufloesen: laengster Span zuerst, dann Position
     found.sort(key=lambda s: (-(s.end - s.start), s.start))
     taken = [False] * len(tokens)
