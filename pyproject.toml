@@ -26,7 +26,6 @@ dependencies = [
     "matplotlib>=3.9",
     "typer>=0.12",             # CLI fuer Experimente
     "tqdm>=4.66",
-    "tenacity>=9.0",           # Backoff bei Rate-Limits
     "diskcache>=5.6",          # LLM-Antwort-Cache
     # --- Demo (korrektor): PDF-Extraktion + Export ---
     "PyMuPDF>=1.24",

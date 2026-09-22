@@ -34,9 +34,12 @@ class Settings(BaseSettings):
     llm_seed: int | None = Field(default=42)
     llm_timeout_seconds: int = Field(default=120, ge=1)
     llm_max_workers: int = Field(default=4, ge=1, le=16)
+    # Drossel unterhalb der KISSKI-Limits (30/min, 200/h, 1000/Tag, 3000/Monat je Key)
+    llm_calls_per_minute: int = Field(default=28, ge=1)
+    llm_calls_per_hour: int = Field(default=190, ge=1)
 
     # --- Schutz gegen weglaufende Experimente ---
-    max_llm_calls_per_run: int = Field(default=20_000, gt=0)
+    max_llm_calls_per_run: int = Field(default=600, gt=0)
 
     # --- Cache / Ergebnisse ---
     cache_dir: str = Field(default=".cache/llm")

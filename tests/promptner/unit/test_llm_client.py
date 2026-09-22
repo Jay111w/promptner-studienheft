@@ -160,3 +160,73 @@ def test_rate_limit_gives_up_after_max_attempts(monkeypatch):
         client.complete(ChatRequest(system="s", user="u"))
     assert exc.value.code is ErrorCode.LLM_RATE_LIMITED
     assert flaky.calls == 2
+
+
+def _rate_limit_with_retry_after(seconds: str) -> RateLimitError:
+    """Wie das OpenAI-SDK: ``response.headers`` traegt ``retry-after`` in Sekunden."""
+    exc = RateLimitError("API rate limit exceeded")
+    exc.response = SimpleNamespace(headers={"retry-after": seconds})
+    return exc
+
+
+@pytest.mark.unit
+def test_rate_limit_waits_for_retry_after_header(monkeypatch):
+    from promptner.llm import client as client_module
+
+    slept: list[float] = []
+    monkeypatch.setattr(client_module, "_sleep", slept.append)
+    calls = {"n": 0}
+
+    def create(**kwargs):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise _rate_limit_with_retry_after("1035")
+        return SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(content="ok"))])
+
+    sdk = SimpleNamespace(
+        chat=SimpleNamespace(completions=SimpleNamespace(create=create)), models=_FakeModels([])
+    )
+    client = LlmClient(settings=_settings(), sdk=sdk)
+    assert client.complete(ChatRequest(system="s", user="u")) == "ok"
+    assert slept and slept[0] >= 1035  # Endpunkt-Angabe wird respektiert, nicht 2^n
+
+
+@pytest.mark.unit
+def test_throttle_sleeps_when_minute_window_is_full(monkeypatch):
+    from promptner.llm import client as client_module
+
+    clock = [1000.0]
+    slept: list[float] = []
+
+    def fake_sleep(sec):
+        slept.append(sec)
+        clock[0] += sec
+
+    monkeypatch.setattr(client_module, "_now", lambda: clock[0])
+    monkeypatch.setattr(client_module, "_sleep", fake_sleep)
+    sdk = _FakeSdk(content="ok")
+    client = LlmClient(settings=_settings(llm_calls_per_minute=2, llm_calls_per_hour=100), sdk=sdk)
+    for _ in range(3):
+        client.complete(ChatRequest(system="s", user="u"))
+    assert len(sdk.completions.calls) == 3
+    assert slept and 59 <= slept[0] <= 61  # dritter Aufruf wartet, bis der erste 60 s alt ist
+
+
+@pytest.mark.unit
+def test_throttle_respects_hour_window(monkeypatch):
+    from promptner.llm import client as client_module
+
+    clock = [0.0]
+    slept: list[float] = []
+
+    def fake_sleep(sec):
+        slept.append(sec)
+        clock[0] += sec
+
+    monkeypatch.setattr(client_module, "_now", lambda: clock[0])
+    monkeypatch.setattr(client_module, "_sleep", fake_sleep)
+    sdk = _FakeSdk(content="ok")
+    client = LlmClient(settings=_settings(llm_calls_per_minute=100, llm_calls_per_hour=2), sdk=sdk)
+    for _ in range(3):
+        client.complete(ChatRequest(system="s", user="u"))
+    assert slept and 3599 <= slept[0] <= 3601
