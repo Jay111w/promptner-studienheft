@@ -109,3 +109,12 @@ def test_mark_sentence_keeps_overlapping_errors_as_addendum():
     ]
     line = mark_sentence(TOK, errors)
     assert "[the Oval]{LOC}" in line and "[Oval ,]{O→ORG}" in line
+
+
+@pytest.mark.unit
+def test_plot_confusion_writes_png(tmp_path):
+    from promptner.eval.plots import plot_confusion
+
+    matrix = {("PER", "PER"): 40, ("PER", "O"): 5, ("O", "LOC"): 1, ("LOC", "LOC"): 12}
+    out = plot_confusion(matrix, ["LOC", "PER"], tmp_path / "cm.png", title="t")
+    assert out.is_file() and out.stat().st_size > 5000

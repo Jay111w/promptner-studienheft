@@ -114,6 +114,7 @@ def errors(
     out: Annotated[
         str | None, typer.Option(help="Zieldatei; Standard results/errors/<run_id>.md")
     ] = None,
+    png: Annotated[bool, typer.Option(help="Verwechslungsmatrix auch als Heatmap-PNG")] = True,
 ) -> None:
     """Fehleranalyse eines Laufs: Verwechslungsmatrix, Grenzfehler, Halluzinationen, Beispiele."""
     from promptner.eval.error_analysis import analyze_run, render_markdown
@@ -127,6 +128,15 @@ def errors(
     target = Path(out) if out else Path(s.results_dir) / "errors" / f"{rep.run_id}.md"
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(render_markdown(rep, max_examples=examples), encoding="utf-8")
+    if png:
+        from promptner.eval.error_analysis import NONE
+        from promptner.eval.plots import plot_confusion
+
+        labels = sorted(({g for g, _ in rep.matrix} | {p for _, p in rep.matrix}) - {NONE})
+        png_path = plot_confusion(
+            rep.matrix, labels, target.with_suffix(".png"), title=rep.run_id.split("__")[-1]
+        )
+        typer.echo(f"-> {png_path}")
     for kind in ("correct", "type", "boundary", "boundary+type", "missed", "spurious"):
         typer.echo(f"  {kind:14s} {rep.counts.get(kind, 0)}")
     typer.echo(

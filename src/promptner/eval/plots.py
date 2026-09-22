@@ -79,3 +79,54 @@ def plot_experiment(summary: pd.DataFrame, experiment: str, out: str | Path) -> 
     fig.savefig(out, dpi=150)
     plt.close(fig)
     return out
+
+
+def plot_confusion(
+    matrix: dict[tuple[str, str], int], labels: list[str], out: str | Path, *, title: str = ""
+) -> Path:
+    """Verwechslungsmatrix Gold x Pred als Heatmap: ein Farbton hell->dunkel, Zahl je Zelle.
+
+    ``labels`` ohne "O"; die Spalte/Zeile "O" (kein Span) wird angehaengt. Die Diagonale
+    (korrekt) wird durch die Zahl sichtbar, nicht durch eine zweite Farbe.
+    """
+    import numpy as np
+    from matplotlib.colors import LinearSegmentedColormap
+
+    cols = [*labels, "O"]
+    data = np.array([[matrix.get((g, p), 0) for p in cols] for g in cols], dtype=float)
+    data[-1, -1] = np.nan  # O->O ist nicht definiert
+    cmap = LinearSegmentedColormap.from_list("teal", ["#f2f7f7", "#0e7c7b"])
+    cmap.set_bad("#ffffff")
+    vmax = max(1.0, np.nanmax(data))
+
+    fig, ax = plt.subplots(figsize=(5.2, 4.6))
+    im = ax.imshow(data, cmap=cmap, vmin=0, vmax=vmax)
+    ax.set_xticks(range(len(cols)), cols)
+    ax.set_yticks(range(len(cols)), cols)
+    ax.set_xlabel("Vorhersage (O = kein Span)")
+    ax.set_ylabel("Gold")
+    ax.xaxis.set_label_position("top")
+    ax.xaxis.tick_top()
+    for spine in ax.spines.values():
+        spine.set_visible(False)
+    ax.set_xticks(np.arange(-0.5, len(cols)), minor=True)
+    ax.set_yticks(np.arange(-0.5, len(cols)), minor=True)
+    ax.grid(which="minor", color="#ffffff", linewidth=2)
+    ax.tick_params(which="both", length=0)
+    for i in range(len(cols)):
+        for j in range(len(cols)):
+            v = data[i, j]
+            if np.isnan(v):
+                ax.text(j, i, "–", ha="center", va="center", color="#6f7b87", fontsize=10)
+                continue
+            ink = "#ffffff" if v > 0.55 * vmax else "#1b2430"
+            ax.text(j, i, f"{int(v)}", ha="center", va="center", color=ink, fontsize=10)
+    fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04, label="Spans")
+    if title:
+        ax.set_title(title, fontsize=9, pad=36, loc="left", color="#6f7b87")
+    fig.tight_layout()
+    out = Path(out)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(out, dpi=150)
+    plt.close(fig)
+    return out
