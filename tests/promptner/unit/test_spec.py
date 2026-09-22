@@ -81,3 +81,14 @@ def test_run_ids_are_unique_across_every_experiment_variant():
                 assert len({s.run_id for s in specs}) == len(specs), (
                     f"{name}: {key} fehlt im run_id"
                 )
+
+
+@pytest.mark.unit
+def test_e8_covers_the_case_where_the_format_actually_breaks():
+    """Retry ist bei k=5 nicht messbar (0 Formatfehler) - E8 enthaelt deshalb auch k=0."""
+    from promptner.experiments.spec import build_experiment
+
+    specs = build_experiment("E8", models=["m"], seeds=[1], limit=50, datasets=None)
+    combos = {(s.config.k_examples, s.config.output_format, s.config.max_retries) for s in specs}
+    assert (0, "text", 1) in combos and (0, "text", 0) in combos
+    assert (5, "json", 1) in combos and (5, "text", 0) in combos

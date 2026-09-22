@@ -119,9 +119,12 @@ def build_experiment(
             split=split,
         )
     if name == "E8":
+        # Ausgabeformat x Retry. Bei k=5 bricht das Format nie, der Retry greift also nicht -
+        # deshalb zusaetzlich k=0, wo jeder Absatz beim ersten Versuch scheitert (siehe E6).
         variants = [
             {"output_format": f, "max_retries": r} for f in ("text", "json") for r in (1, 0)
         ]
+        variants += [{"k_examples": 0, "output_format": "text", "max_retries": r} for r in (1, 0)]
         return _specs("E8", variants, models=models, seeds=seeds, limit=limit, split=split)
     if name == "E10":
         # Zusatz: Saetze je Aufruf ("Paragraph"), Budget vs. Recall

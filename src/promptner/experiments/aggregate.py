@@ -58,7 +58,8 @@ def variant_label(row: pd.Series) -> str:
     if exp == "E7":
         return "mit Kandidaten" if row["use_candidates"] else "nur Entitäten"
     if exp == "E8":
-        return f"{row['output_format']}, retry={'an' if row['max_retries'] else 'aus'}"
+        k = "" if row["k_examples"] else "k=0, "
+        return f"{k}{row['output_format']}, retry={'an' if row['max_retries'] else 'aus'}"
     if exp == "E10":
         return f"p={row['paragraph_size']}"
     n = int(row["limit"]) if pd.notna(row["limit"]) else "all"
