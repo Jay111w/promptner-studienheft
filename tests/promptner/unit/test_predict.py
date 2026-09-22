@@ -145,3 +145,17 @@ def test_paragraph_size_one_equals_sentence_mode():
 def test_paragraph_size_in_short_name():
     assert PromptConfig(dataset="conll2003").short_name().endswith("_s1_p2")
     assert PromptConfig(dataset="conll2003", paragraph_size=1).short_name().endswith("_s1_p1")
+
+
+@pytest.mark.unit
+def test_paragraph_retries_counted_once_per_paragraph():
+    cfg = PromptConfig(dataset="conll2003", k_examples=2, paragraph_size=3)
+    preds = predict_many(PARA, cfg, _ScriptedClient(["garbage", PARA_ANSWER]), workers=1)
+    assert [p.retries for p in preds] == [1, 0, 0]
+    preds = predict_many(
+        PARA,
+        PromptConfig(dataset="conll2003", k_examples=2, paragraph_size=3, max_retries=0),
+        _ScriptedClient(["garbage"]),
+        workers=1,
+    )
+    assert [p.retries for p in preds] == [0, 0, 0] and not any(p.parse_ok for p in preds)

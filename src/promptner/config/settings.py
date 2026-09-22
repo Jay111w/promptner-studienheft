@@ -39,7 +39,8 @@ class Settings(BaseSettings):
     llm_calls_per_hour: int = Field(default=190, ge=1)
 
     # --- Schutz gegen weglaufende Experimente ---
-    max_llm_calls_per_run: int = Field(default=600, gt=0)
+    # Notbremse je Prozess (ein `promptner run` = mehrere Laeufe); Budget steuert die Drossel
+    max_llm_calls_per_run: int = Field(default=2500, gt=0)
 
     # --- Cache / Ergebnisse ---
     cache_dir: str = Field(default=".cache/llm")

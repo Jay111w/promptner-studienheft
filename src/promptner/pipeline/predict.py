@@ -101,8 +101,10 @@ def predict_paragraph(
                     exc.message,
                 )
                 return [
-                    Prediction(sentence_id=s.id, raw=raw, parse_ok=False, retries=retries)
-                    for s in sentences
+                    Prediction(
+                        sentence_id=s.id, raw=raw, parse_ok=False, retries=retries if i == 0 else 0
+                    )
+                    for i, s in enumerate(sentences)
                 ]
             retries += 1
             hint = _RETRY_HINT[config.output_format]
@@ -116,7 +118,7 @@ def predict_paragraph(
             candidates=candidates,
             raw=raw,
             parse_ok=True,
-            retries=retries,
+            retries=retries if i == 0 else 0,  # Absatz-Diagnosen nur einmal zaehlen
             n_unmatched=unmatched if i == 0 else 0,
             n_unknown_type=unknown if i == 0 else 0,
         )

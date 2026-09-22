@@ -39,7 +39,7 @@ def _retry_after_seconds(exc: BaseException) -> float | None:
     headers = getattr(getattr(exc, "response", None), "headers", None)
     if not headers:
         return None
-    value = headers.get("retry-after") or headers.get("ratelimit-reset")
+    value = headers.get("retry-after")  # ratelimit-reset kann ein Zeitstempel sein - ignorieren
     try:
         return float(value) if value is not None else None
     except (TypeError, ValueError):

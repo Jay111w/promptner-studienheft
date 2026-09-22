@@ -230,3 +230,12 @@ def test_throttle_respects_hour_window(monkeypatch):
     for _ in range(3):
         client.complete(ChatRequest(system="s", user="u"))
     assert slept and 3599 <= slept[0] <= 3601
+
+
+@pytest.mark.unit
+def test_ratelimit_reset_header_is_ignored(monkeypatch):
+    from promptner.llm import client as client_module
+
+    exc = RateLimitError("x")
+    exc.response = SimpleNamespace(headers={"ratelimit-reset": "1758500000"})
+    assert client_module._retry_after_seconds(exc) is None

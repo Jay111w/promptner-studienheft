@@ -97,3 +97,15 @@ def test_render_markdown_contains_matrix_and_marked_example(tmp_path):
     assert "Typverwechslung" in md and "Halluzinierte Kandidaten" in md
     header = next(line for line in md.splitlines() if line.startswith("| Gold \\ Pred |"))
     assert header.count(" O ") == 1  # "kein Span" genau einmal, nicht als eigener Typ
+
+
+@pytest.mark.unit
+def test_mark_sentence_keeps_overlapping_errors_as_addendum():
+    from promptner.eval.error_analysis import SpanError, mark_sentence
+
+    errors = [
+        SpanError("correct", _sp(1, 3, "LOC"), _sp(1, 3, "LOC")),
+        SpanError("spurious", None, _sp(2, 4, "ORG")),
+    ]
+    line = mark_sentence(TOK, errors)
+    assert "[the Oval]{LOC}" in line and "[Oval ,]{O→ORG}" in line

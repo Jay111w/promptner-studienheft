@@ -127,20 +127,34 @@ def analyze_run(run_dir: str | Path) -> ErrorReport:
     return rep
 
 
+def _tag(e: SpanError, tokens: list[str]) -> str:
+    if e.kind == "correct":
+        return e.gold_label or ""
+    tag = f"{e.gold_label or NONE}→{e.pred_label or NONE}"
+    # bei Grenzfehlern beide Spans zeigen: Gold-Grenzen im Text, Pred-Grenzen in der Markierung
+    if e.kind.startswith("boundary") and e.pred is not None and e.gold is not None:
+        tag += f" pred=„{' '.join(tokens[e.pred.start : e.pred.end])}“"
+    return tag
+
+
 def mark_sentence(tokens: list[str], errors: list[SpanError]) -> str:
-    """Satz mit ``[Text]{GOLD→PRED}``-Markierungen; korrekte Spans als ``[Text]{LOC}``."""
+    """Satz mit ``[Text]{GOLD→PRED}``-Markierungen; korrekte Spans als ``[Text]{LOC}``.
+
+    Fehler, deren Span sich mit einer schon gesetzten Markierung ueberschneidet, werden
+    hinten als Nachtrag angehaengt statt verschluckt.
+    """
     marks: dict[int, tuple[int, str]] = {}
-    for e in errors:
+    extra: list[str] = []
+    taken: set[int] = set()
+    for e in sorted(errors, key=lambda e: ((e.gold or e.pred).start, -(e.gold or e.pred).end)):  # type: ignore[union-attr]
         span = e.gold or e.pred
         assert span is not None
-        if e.kind == "correct":
-            tag = e.gold_label or ""
-        else:
-            tag = f"{e.gold_label or NONE}→{e.pred_label or NONE}"
-        # bei Grenzfehlern beide Spans zeigen: Gold-Grenzen, Pred-Grenzen in der Markierung
-        if e.kind.startswith("boundary") and e.pred is not None and e.gold is not None:
-            tag += f" pred=„{' '.join(tokens[e.pred.start : e.pred.end])}“"
-        marks.setdefault(span.start, (span.end, tag))
+        text = " ".join(tokens[span.start : span.end])
+        if any(i in taken for i in range(span.start, span.end)):
+            extra.append(f"[{text}]{{{_tag(e, tokens)}}}")
+            continue
+        taken.update(range(span.start, span.end))
+        marks[span.start] = (span.end, _tag(e, tokens))
     out: list[str] = []
     i = 0
     while i < len(tokens):
@@ -151,7 +165,10 @@ def mark_sentence(tokens: list[str], errors: list[SpanError]) -> str:
         else:
             out.append(tokens[i])
             i += 1
-    return " ".join(out)
+    line = " ".join(out)
+    if extra:
+        line += "  · zusätzlich: " + ", ".join(extra)
+    return line
 
 
 _KIND_DE = {
