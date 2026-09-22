@@ -1,7 +1,7 @@
 """Antwort-Cache auf Platte: jede (Modell, Prompt, Seed)-Kombination wird nur einmal angefragt.
 
 Macht Wiederholungen kostenlos und deterministisch; Schluessel ist ein SHA-256
-ueber Modell-ID, System- und User-Prompt sowie Seed.
+ueber Modell-ID, den vollstaendigen Prompt (alle Turns) sowie Seed.
 """
 
 from __future__ import annotations
@@ -18,8 +18,7 @@ def cache_key(model: str, request: ChatRequest, seed: int | None) -> str:
     h = hashlib.sha256()
     for part in (
         model,
-        request.system,
-        request.user,
+        request.full_text,
         str(seed),
         request.json_mode and "json" or "text",
     ):

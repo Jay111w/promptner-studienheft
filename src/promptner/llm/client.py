@@ -41,12 +41,31 @@ class ChatSdk(Protocol):
 
 @dataclass(frozen=True)
 class ChatRequest:
-    """Eine Chat-Anfrage; ``model`` ueberschreibt das Standardmodell."""
+    """Eine Chat-Anfrage; ``model`` ueberschreibt das Standardmodell.
+
+    ``turns`` sind Few-Shot-Beispiele als (User, Assistant)-Paare vor der eigentlichen
+    ``user``-Nachricht. Chat-Modelle beantworten Beispiele, die alle in einer Nachricht
+    stehen, sonst erneut (Echo) - als eigene Turns bleiben sie Kontext.
+    """
 
     system: str
     user: str
     model: str | None = None
     json_mode: bool = False
+    turns: tuple[tuple[str, str], ...] = ()
+
+    def messages(self) -> list[dict[str, str]]:
+        out = [{"role": "system", "content": self.system}]
+        for asked, answered in self.turns:
+            out.append({"role": "user", "content": asked})
+            out.append({"role": "assistant", "content": answered})
+        out.append({"role": "user", "content": self.user})
+        return out
+
+    @property
+    def full_text(self) -> str:
+        """Alle Nachrichten hintereinander - fuer Cache-Schluessel, Hash und Tests."""
+        return "\n\n".join(m["content"] for m in self.messages())
 
 
 class LlmClient:
@@ -83,10 +102,7 @@ class LlmClient:
             sdk = self._ensure_sdk()
         kwargs: dict[str, Any] = {
             "model": request.model or self._settings.llm_model,
-            "messages": [
-                {"role": "system", "content": request.system},
-                {"role": "user", "content": request.user},
-            ],
+            "messages": request.messages(),
             "temperature": self._settings.llm_temperature,
         }
         if self._settings.llm_seed is not None:

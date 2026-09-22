@@ -10,13 +10,38 @@ SENT = Sentence(id="t", tokens=["Ohio", "is", "a", "state", "."])
 
 
 def _user(**kw) -> str:
-    return build_prompt(PromptConfig(dataset="conll2003", **kw), SENT).user
+    """Gesamter Prompt-Text ueber alle Turns (Defn, Q, Beispiele, Zielsatz)."""
+    return build_prompt(PromptConfig(dataset="conll2003", **kw), SENT).full_text
+
+
+@pytest.mark.unit
+def test_examples_become_separate_chat_turns():
+    # Chat-Modelle beantworten sonst die Beispiele erneut (Echo); jedes Beispiel wird
+    # daher als eigenes User/Assistant-Paar gesendet, der Zielsatz als letzter User-Turn.
+    req = build_prompt(PromptConfig(dataset="conll2003"), SENT)
+    assert len(req.turns) == 5
+    assert req.turns[0][0].startswith("Defn: ")
+    assert "Q: Given the paragraph below" in req.turns[0][0]
+    for user, assistant in req.turns:
+        assert user.rstrip().endswith("Answer:")
+        assert assistant.startswith("1. ")
+    assert req.user == "Paragraph: Ohio is a state .\n\nAnswer:"
+    assert "Defn:" not in req.user and "| True" not in req.user
+
+
+@pytest.mark.unit
+def test_zero_shot_has_no_turns_and_preamble_in_user():
+    req = build_prompt(PromptConfig(dataset="conll2003", k_examples=0), SENT)
+    assert req.turns == ()
+    assert req.user.startswith("Defn: ")
+    assert req.user.rstrip().endswith("Paragraph: Ohio is a state .\n\nAnswer:")
 
 
 @pytest.mark.unit
 def test_full_prompt_structure():
-    u = _user()
-    assert u.startswith("Defn: ")
+    req = build_prompt(PromptConfig(dataset="conll2003"), SENT)
+    u = req.full_text
+    assert req.turns[0][0].startswith("Defn: ")  # erste User-Nachricht beginnt mit Defn
     assert "Q: Given the paragraph below" in u
     assert u.count("Paragraph: ") == 6  # 5 Beispiele + Zielsatz
     assert u.rstrip().endswith("Paragraph: Ohio is a state .\n\nAnswer:")
@@ -58,7 +83,7 @@ def test_json_format_instructs_schema():
 @pytest.mark.unit
 def test_system_prompt_and_language():
     de = build_prompt(PromptConfig(dataset="germeval14"), SENT)
-    assert "Defn: Eine Entität" in de.user
+    assert "Defn: Eine Entität" in de.full_text
     assert "Absatz:" in de.user and "Antwort:" in de.user
     assert de.system
 

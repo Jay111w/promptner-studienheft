@@ -60,6 +60,23 @@ def test_complete_returns_text_and_passes_model_and_temperature():
 
 
 @pytest.mark.unit
+def test_fewshot_turns_are_sent_as_alternating_messages():
+    sdk = _FakeSdk(content="ok")
+    client = LlmClient(settings=_settings(), sdk=sdk)
+    req = ChatRequest(system="sys", user="final", turns=(("q1", "a1"), ("q2", "a2")))
+    client.complete(req)
+    assert sdk.completions.calls[0]["messages"] == [
+        {"role": "system", "content": "sys"},
+        {"role": "user", "content": "q1"},
+        {"role": "assistant", "content": "a1"},
+        {"role": "user", "content": "q2"},
+        {"role": "assistant", "content": "a2"},
+        {"role": "user", "content": "final"},
+    ]
+    assert req.full_text == "sys\n\nq1\n\na1\n\nq2\n\na2\n\nfinal"
+
+
+@pytest.mark.unit
 def test_model_override_per_request():
     sdk = _FakeSdk(content="ok")
     client = LlmClient(settings=_settings(llm_model="default"), sdk=sdk)

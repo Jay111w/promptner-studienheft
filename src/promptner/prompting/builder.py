@@ -123,14 +123,25 @@ def build_prompt(config: PromptConfig, sentence: Sentence) -> ChatRequest:
     if config.output_format == "json":
         question = f"{question}\n{w['json_instruction']}"
     parts.append(f"Q: {question}")
+    preamble = "\n\n".join(parts)
+
+    def ask(text: str) -> str:
+        return f"{w['paragraph']}: {text}\n\n{w['answer']}:"
+
+    # Figure 1 als Chat: Defn + Q stehen vor dem ersten Absatz, jedes Beispiel ist ein
+    # eigener User/Assistant-Turn, der Zielsatz die letzte User-Nachricht.
+    turns: list[tuple[str, str]] = []
     for ex in select_examples(config.dataset, config.k_examples, config.seed):
-        parts.append(
-            f"{w['paragraph']}: {' '.join(ex.tokens)}\n\n{w['answer']}:\n"
-            f"{format_answer(list(ex.candidates), config)}"
-        )
-    parts.append(f"{w['paragraph']}: {sentence.text}\n\n{w['answer']}:")
+        asked = ask(" ".join(ex.tokens))
+        if not turns:
+            asked = f"{preamble}\n\n{asked}"
+        turns.append((asked, format_answer(list(ex.candidates), config)))
+    user = ask(sentence.text) if turns else f"{preamble}\n\n{ask(sentence.text)}"
     return ChatRequest(
-        system=w["system"], user="\n\n".join(parts), json_mode=config.output_format == "json"
+        system=w["system"],
+        user=user,
+        json_mode=config.output_format == "json",
+        turns=tuple(turns),
     )
 
 
@@ -138,5 +149,5 @@ def prompt_hash(config: PromptConfig) -> str:
     """Kurzer, stabiler Hash ueber alles, was den Prompt bestimmt (fuer Ergebnisdateien)."""
     probe = Sentence(id="probe", tokens=["x"])
     req = build_prompt(config, probe)
-    digest = hashlib.sha256((req.system + "\n" + req.user).encode("utf-8")).hexdigest()
+    digest = hashlib.sha256(req.full_text.encode("utf-8")).hexdigest()
     return digest[:12]

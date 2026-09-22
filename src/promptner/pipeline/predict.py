@@ -9,6 +9,7 @@ die Schema-Fehlerquote ist selbst eine Messgroesse (Ablation E7).
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import replace
 
 from promptner.config import get_logger
 from promptner.domain import Prediction, PromptConfig, Sentence
@@ -57,9 +58,7 @@ def predict_sentence(
 ) -> Prediction:
     request = build_prompt(config, sentence)
     if model is not None:
-        request = ChatRequest(
-            system=request.system, user=request.user, model=model, json_mode=request.json_mode
-        )
+        request = replace(request, model=model)
     raw = ""
     retries = 0
     while True:
@@ -78,12 +77,7 @@ def predict_sentence(
                 return Prediction(sentence_id=sentence.id, raw=raw, parse_ok=False, retries=retries)
             retries += 1
             hint = _RETRY_HINT[config.output_format]
-            request = ChatRequest(
-                system=request.system,
-                user=f"{request.user}\n\n{hint}",
-                model=request.model,
-                json_mode=request.json_mode,
-            )
+            request = replace(request, user=f"{request.user}\n\n{hint}")
     spans, unmatched, unknown = align(sentence, candidates, config.dataset)
     return Prediction(
         sentence_id=sentence.id,
