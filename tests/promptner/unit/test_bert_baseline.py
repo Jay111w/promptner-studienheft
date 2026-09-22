@@ -5,8 +5,10 @@ import pytest
 from promptner.baseline.bert import (
     LABELS_CONLL_BIO,
     align_labels,
+    bio_labels,
     first_subword_predictions,
     label_ids_to_bio,
+    run_id_for,
 )
 from promptner.data.bio import bio_to_spans, spans_to_bio
 from promptner.domain import Span
@@ -41,3 +43,43 @@ def test_label_set_is_bio_over_conll_types():
     assert LABELS_CONLL_BIO[0] == "O"
     assert {t[2:] for t in LABELS_CONLL_BIO if t != "O"} == {"PER", "ORG", "LOC", "MISC"}
     assert len(LABELS_CONLL_BIO) == 9
+
+
+@pytest.mark.unit
+def test_bio_labels_follow_the_dataset():
+    """GermEval hat OTH statt MISC - der Klassifikationskopf muss das abbilden."""
+    assert bio_labels("conll2003") == LABELS_CONLL_BIO
+    germeval = bio_labels("germeval14")
+    assert germeval[0] == "O"
+    assert {t[2:] for t in germeval if t != "O"} == {"PER", "ORG", "LOC", "OTH"}
+    assert len(germeval) == 9
+
+
+@pytest.mark.unit
+def test_bio_labels_rejects_unknown_dataset():
+    with pytest.raises(ValueError, match="studienheft"):
+        bio_labels("studienheft")
+
+
+@pytest.mark.unit
+def test_label_ids_to_bio_uses_given_label_set():
+    ids = [0, bio_labels("germeval14").index("B-OTH")]
+    assert label_ids_to_bio(ids, bio_labels("germeval14")) == ["O", "B-OTH"]
+    # Ohne Angabe bleibt es bei CoNLL - alter Aufruf bleibt gueltig.
+    assert label_ids_to_bio([0]) == ["O"]
+
+
+@pytest.mark.unit
+def test_run_id_names_the_dataset():
+    """Sonst ueberschreiben deutscher und englischer Lauf einander."""
+    de = run_id_for("germeval14", "validation", 150, "deepset/gbert-base", epochs=3, seed=1)
+    en = run_id_for("conll2003", "validation", 150, "bert-base-cased", epochs=3, seed=1)
+    assert de.startswith("E9__germeval14-validation-150__")
+    assert en.startswith("E9__conll2003-validation-150__")
+    assert de != en
+    assert "/" not in de, "Modell-IDs mit Slash wuerden ein Unterverzeichnis erzeugen"
+
+
+@pytest.mark.unit
+def test_run_id_marks_full_split():
+    assert "test-all" in run_id_for("conll2003", "test", None, "bert-base-cased", epochs=3, seed=1)

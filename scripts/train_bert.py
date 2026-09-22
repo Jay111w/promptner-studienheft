@@ -1,8 +1,12 @@
 """BERT-Baseline (E9) trainieren und wie einen PromptNER-Lauf ablegen.
 
-uv run --extra bert scripts/train_bert.py                       # 3 Epochen, Dev-150
-uv run --extra bert scripts/train_bert.py --eval-split test --eval-limit 0   # Test-Set komplett
+uv run --extra bert scripts/train_bert.py                       # CoNLL-2003, 3 Epochen, Dev-150
+uv run --extra bert scripts/train_bert.py --eval test:0         # Test-Set komplett
 uv run --extra bert scripts/train_bert.py --train-limit 200 --epochs 1       # Rauchtest
+
+Deutsche Baseline (GermEval 2014), Gegenstueck zu den GermEval-Prompt-Laeufen:
+
+uv run --extra bert scripts/train_bert.py --dataset germeval14 --model deepset/gbert-base
 """
 
 from __future__ import annotations
@@ -20,6 +24,7 @@ app = typer.Typer(add_completion=False)
 
 @app.command()
 def main(
+    dataset: Annotated[str, typer.Option(help="conll2003 oder germeval14")] = "conll2003",
     epochs: Annotated[int, typer.Option()] = 3,
     seed: Annotated[int, typer.Option()] = 1,
     train_limit: Annotated[int, typer.Option(help="0 = alle 14k Saetze")] = 0,
@@ -31,6 +36,7 @@ def main(
     s = get_settings()
     setup_logging(level=s.log_level, log_dir=s.log_dir)
     cfg = TrainConfig(
+        dataset=dataset,
         model_name=model,
         epochs=epochs,
         seed=seed,
@@ -45,7 +51,7 @@ def main(
             f"R={summary['recall']:.4f} | {summary['n_sentences']} Saetze | "
             f"Training {summary['elapsed_s']}s auf {summary['device']}"
         )
-        typer.echo(f"-> results/runs/{summary['run_id']}")
+        typer.echo(f"-> {s.results_dir}/runs/{summary['run_id']}")
 
 
 if __name__ == "__main__":

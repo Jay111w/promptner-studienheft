@@ -1,5 +1,9 @@
-"""BERT-Baseline fuer CoNLL-2003: Fine-Tuning mit Linear-Kopf, bewertet mit derselben seqeval-
-Funktion wie PromptNER und abgelegt als normaler Lauf unter ``results/runs/``.
+"""BERT-Baseline (E9): Fine-Tuning mit Linear-Kopf, bewertet mit derselben seqeval-Funktion wie
+PromptNER und abgelegt als normaler Lauf unter ``results/runs/``.
+
+Datensatz und Modell sind frei waehlbar: CoNLL-2003 mit ``bert-base-cased`` (englisch) oder
+GermEval 2014 mit einem deutschen Modell, z. B. ``deepset/gbert-base``. Das Label-Set kommt
+aus dem Datensatz (CoNLL: MISC, GermEval: OTH).
 
 torch/transformers werden erst in ``train_and_evaluate`` importiert (Extra ``bert``), damit das
 Paket ohne sie importierbar bleibt. Die reinen Hilfsfunktionen sind ohne Modell testbar.
@@ -16,7 +20,7 @@ from typing import Any
 
 from promptner.config import get_logger
 from promptner.data.bio import bio_to_spans, spans_to_bio
-from promptner.data.loaders import load_by_name
+from promptner.data.loaders import DATASETS, load_by_name
 from promptner.domain import LABELS_CONLL, Sentence
 from promptner.eval.metrics import evaluate
 
@@ -26,6 +30,27 @@ LABELS_CONLL_BIO: tuple[str, ...] = ("O",) + tuple(
     f"{p}-{t}" for t in LABELS_CONLL for p in ("B", "I")
 )
 IGNORE = -100
+
+
+def bio_labels(dataset: str) -> tuple[str, ...]:
+    """BIO-Label-Set des Datensatzes, Reihenfolge fest (= Index im Klassifikationskopf)."""
+    try:
+        types = DATASETS[dataset]
+    except KeyError:
+        raise ValueError(
+            f"Unbekannter Datensatz: {dataset!r}. Bekannt: {sorted(DATASETS)}"
+        ) from None
+    return ("O",) + tuple(f"{p}-{t}" for t in types for p in ("B", "I"))
+
+
+def run_id_for(
+    dataset: str, split: str, limit: int | None, model_name: str, *, epochs: int, seed: int
+) -> str:
+    """Lauf-ID wie bei den Prompt-Laeufen; der Slash in Modell-IDs wird zum Bindestrich,
+    sonst entstuende ein Unterverzeichnis unter ``results/runs/``."""
+    n = limit if limit is not None else "all"
+    model = model_name.replace("/", "-")
+    return f"E9__{dataset}-{split}-{n}__{model}__ft_e{epochs}_s{seed}"
 
 
 def align_labels(word_ids: list[int | None], labels: list[int]) -> list[int]:
@@ -55,12 +80,13 @@ def first_subword_predictions(
     return out
 
 
-def label_ids_to_bio(ids: list[int]) -> list[str]:
-    return [LABELS_CONLL_BIO[i] for i in ids]
+def label_ids_to_bio(ids: list[int], labels: tuple[str, ...] = LABELS_CONLL_BIO) -> list[str]:
+    return [labels[i] for i in ids]
 
 
 @dataclass
 class TrainConfig:
+    dataset: str = "conll2003"
     model_name: str = "bert-base-cased"
     epochs: int = 3
     batch_size: int = 16
@@ -82,20 +108,22 @@ def _device():
     return torch.device("cpu")
 
 
-def _encode(tokenizer: Any, sentences: list[Sentence], max_length: int) -> list[dict]:
+def _encode(
+    tokenizer: Any, sentences: list[Sentence], max_length: int, label_set: tuple[str, ...]
+) -> list[dict]:
     rows = []
     for s in sentences:
         tags = spans_to_bio(s.spans, len(s.tokens))
         enc = tokenizer(s.tokens, is_split_into_words=True, truncation=True, max_length=max_length)
-        labels = [LABELS_CONLL_BIO.index(t) for t in tags]
+        labels = [label_set.index(t) for t in tags]
         enc["labels"] = align_labels(enc.word_ids(), labels)
         rows.append(dict(enc))
     return rows
 
 
 def train_and_evaluate(cfg: TrainConfig, results_dir: str | Path = "results") -> list[dict]:
-    """Trainiert einmal auf CoNLL-Train, bewertet auf jedem ``cfg.eval_splits`` und schreibt je
-    Split einen Lauf."""
+    """Trainiert einmal auf dem Train-Split von ``cfg.dataset``, bewertet auf jedem
+    ``cfg.eval_splits`` und schreibt je Split einen Lauf."""
     import torch
     from torch.utils.data import DataLoader
     from transformers import (
@@ -107,22 +135,29 @@ def train_and_evaluate(cfg: TrainConfig, results_dir: str | Path = "results") ->
 
     torch.manual_seed(cfg.seed)
     device = _device()
-    log.info("BERT-Baseline: %s auf %s, %d Epochen", cfg.model_name, device, cfg.epochs)
+    label_set = bio_labels(cfg.dataset)
+    log.info(
+        "BERT-Baseline: %s auf %s (%s), %d Epochen",
+        cfg.model_name,
+        cfg.dataset,
+        device,
+        cfg.epochs,
+    )
 
     tokenizer = AutoTokenizer.from_pretrained(cfg.model_name)
-    train = load_by_name("conll2003", "train", limit=cfg.train_limit)
+    train = load_by_name(cfg.dataset, "train", limit=cfg.train_limit)
     collator = DataCollatorForTokenClassification(tokenizer)
     train_loader = DataLoader(
-        _encode(tokenizer, train, cfg.max_length),
+        _encode(tokenizer, train, cfg.max_length, label_set),
         batch_size=cfg.batch_size,
         shuffle=True,
         collate_fn=collator,
     )
     model = AutoModelForTokenClassification.from_pretrained(
         cfg.model_name,
-        num_labels=len(LABELS_CONLL_BIO),
-        id2label=dict(enumerate(LABELS_CONLL_BIO)),
-        label2id={lbl: i for i, lbl in enumerate(LABELS_CONLL_BIO)},
+        num_labels=len(label_set),
+        id2label=dict(enumerate(label_set)),
+        label2id={lbl: i for i, lbl in enumerate(label_set)},
     ).to(device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=cfg.lr)
     total = len(train_loader) * cfg.epochs
@@ -153,7 +188,7 @@ def train_and_evaluate(cfg: TrainConfig, results_dir: str | Path = "results") ->
     model.eval()
     summaries: list[dict] = []
     for eval_split, eval_limit in cfg.eval_splits:
-        eval_sents = load_by_name("conll2003", eval_split, limit=eval_limit)  # type: ignore[arg-type]
+        eval_sents = load_by_name(cfg.dataset, eval_split, limit=eval_limit)  # type: ignore[arg-type]
         # Vorhersage: erstes Subword je Wort -> BIO -> Spans
         predicted = []
         with torch.no_grad():
@@ -168,11 +203,17 @@ def train_and_evaluate(cfg: TrainConfig, results_dir: str | Path = "results") ->
                 logits = model(**{k: v.to(device) for k, v in enc.items()}).logits[0]
                 pred_ids = logits.argmax(-1).tolist()
                 word_pred = first_subword_predictions(enc.word_ids(), pred_ids, len(s.tokens))
-                predicted.append(bio_to_spans(label_ids_to_bio(word_pred)))
+                predicted.append(bio_to_spans(label_ids_to_bio(word_pred, label_set)))
         result = evaluate(eval_sents, predicted)
 
-        n = eval_limit if eval_limit is not None else "all"
-        run_id = f"E9__conll2003-{eval_split}-{n}__{cfg.model_name}__ft_e{cfg.epochs}_s{cfg.seed}"
+        run_id = run_id_for(
+            cfg.dataset,
+            eval_split,
+            eval_limit,
+            cfg.model_name,
+            epochs=cfg.epochs,
+            seed=cfg.seed,
+        )
         run_dir = Path(results_dir) / "runs" / run_id
         run_dir.mkdir(parents=True, exist_ok=True)
         with (run_dir / "predictions.jsonl").open("w", encoding="utf-8") as fh:
@@ -198,7 +239,7 @@ def train_and_evaluate(cfg: TrainConfig, results_dir: str | Path = "results") ->
         summary = {
             "run_id": run_id,
             "experiment": "E9",
-            "dataset": "conll2003",
+            "dataset": cfg.dataset,
             "split": eval_split,
             "limit": eval_limit,
             "model": cfg.model_name,
