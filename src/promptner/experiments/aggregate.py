@@ -19,6 +19,7 @@ GROUP_KEYS = [
     "use_candidates",
     "output_format",
     "max_retries",
+    "paragraph_size",
 ]
 METRICS = [
     "f1",
@@ -35,7 +36,9 @@ METRICS = [
 def collect(results_dir: str | Path) -> pd.DataFrame:
     rows = []
     for path in sorted(Path(results_dir).glob("runs/*/summary.json")):
-        rows.append(json.loads(path.read_text(encoding="utf-8")))
+        row = json.loads(path.read_text(encoding="utf-8"))
+        row.setdefault("paragraph_size", 2)  # Laeufe vor E10 hatten das Feld noch nicht
+        rows.append(row)
     return pd.DataFrame(rows)
 
 
@@ -56,6 +59,8 @@ def variant_label(row: pd.Series) -> str:
         return "mit Kandidaten" if row["use_candidates"] else "nur Entitäten"
     if exp == "E8":
         return f"{row['output_format']}, retry={'an' if row['max_retries'] else 'aus'}"
+    if exp == "E10":
+        return f"p={row['paragraph_size']}"
     return f"{row['dataset']}/{row['model']}"
 
 

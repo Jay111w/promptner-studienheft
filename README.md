@@ -37,6 +37,8 @@ Prompts werden aus dem Antwort-Cache (`.cache/llm`) bedient, abgebrochene Läufe
 | E6 | Ablation Few-Shot | k ∈ {0, 2, 5, 10} |
 | E7 | Ablation Kandidatenliste | `use_candidates` |
 | E8 | Ausgabeformat + Retry | Text (Paper) vs. JSON-Schema, Retry an/aus |
+| E9 | Klassische Baseline | `scripts/train_bert.py` (BERT + Linear-Kopf, lokal) |
+| E10 | Sätze je Aufruf | `paragraph_size` ∈ {1, 2, 3, 5} |
 
 ```bash
 uv run promptner run --experiment E4 --dry-run          # nur auflisten

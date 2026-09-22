@@ -19,13 +19,14 @@ _TITLES = {
     "E6": "Ablation: Anzahl Few-Shot-Beispiele",
     "E7": "Ablation: Kandidatenliste",
     "E8": "Ausgabeformat und Retry",
+    "E10": "Zusatz: Sätze je Aufruf (Absatzgröße)",
 }
 
 
 def _variant_order(row: pd.Series) -> float:
     """Numerische Reihenfolge fuer k=...; sonst 'mit' vor 'ohne', Rest alphabetisch."""
     v = str(row["variant"])
-    if v.startswith("k="):
+    if v.startswith("k=") or v.startswith("p="):
         return float(v[2:])
     if v.startswith("mit") or v.startswith("text"):
         return 0.0

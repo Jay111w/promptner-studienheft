@@ -44,6 +44,7 @@ class RunRecord(BaseModel):
     use_candidates: bool
     output_format: str
     max_retries: int
+    paragraph_size: int = 2
     seed: int
     prompt_hash: str
     f1: float
@@ -132,6 +133,7 @@ def run_spec(
         use_candidates=cfg.use_candidates,
         output_format=cfg.output_format,
         max_retries=cfg.max_retries,
+        paragraph_size=cfg.paragraph_size,
         seed=cfg.seed,
         prompt_hash=prompt_hash(cfg),
         f1=result.f1,

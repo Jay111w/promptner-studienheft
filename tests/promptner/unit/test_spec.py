@@ -49,3 +49,12 @@ def test_run_id_contains_all_dimensions():
 def test_unknown_experiment():
     with pytest.raises(ValueError):
         build_experiment("E99", models=["m"], seeds=[1], limit=1)
+
+
+@pytest.mark.unit
+def test_e10_varies_paragraph_size():
+    from promptner.experiments.spec import build_experiment
+
+    specs = build_experiment("E10", models=["m"], seeds=[1], limit=100, datasets=None)
+    assert [s.config.paragraph_size for s in specs] == [1, 2, 3, 5]
+    assert all(s.run_id.endswith(f"_p{s.config.paragraph_size}") for s in specs)

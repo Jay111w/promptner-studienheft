@@ -123,6 +123,16 @@ def build_experiment(
             {"output_format": f, "max_retries": r} for f in ("text", "json") for r in (1, 0)
         ]
         return _specs("E8", variants, models=models, seeds=seeds, limit=limit, split=split)
+    if name == "E10":
+        # Zusatz: Saetze je Aufruf ("Paragraph"), Budget vs. Recall
+        return _specs(
+            "E10",
+            [{"paragraph_size": n} for n in (1, 2, 3, 5)],
+            models=models,
+            seeds=seeds,
+            limit=limit,
+            split=split,
+        )
     if name == "E1":
         ds_list = datasets or ["conll2003", "germeval14"]
         return [
@@ -132,4 +142,4 @@ def build_experiment(
                 "E1", [{}], models=models, seeds=seeds, limit=limit, dataset=ds, split="test"
             )
         ]
-    raise ValueError(f"Unbekanntes Experiment: {name!r}. Bekannt: E1-E8")
+    raise ValueError(f"Unbekanntes Experiment: {name!r}. Bekannt: E1-E8, E10")
