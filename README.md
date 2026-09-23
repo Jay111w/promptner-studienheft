@@ -59,7 +59,7 @@ Prompts werden aus dem Antwort-Cache (`.cache/llm`) bedient, abgebrochene Läufe
 ```bash
 uv run promptner run --experiment E4 --dry-run          # nur auflisten
 uv run promptner run --experiment E4                    # Standard: 150 Sätze, Seeds 1,2, 2 Sätze je Aufruf
-uv run promptner run --experiment E3 --models qwen3.8-27b,mistral-medium-3.5-128b --seeds 1
+uv run promptner run --experiment E3 --models qwen3.8-27b,mistral-medium-3.5-128b,qwen3.5-397b-a17b --seeds 1
 uv run promptner summary                                # results/summary.csv, Mittelwert ± Std über Seeds
 uv run promptner plots                                  # results/plots/E*.png
 uv run promptner errors --run <run_id>                  # results/errors/<run_id>.md: Matrix, Grenzfehler, Beispiele
