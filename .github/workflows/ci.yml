@@ -28,7 +28,7 @@ jobs:
         run: uv python install ${{ matrix.python-version }}
 
       - name: Systemabhaengigkeiten fuer Qt (headless, nur Demo-Tests)
-        run: sudo apt-get update && sudo apt-get install -y libegl1 libgl1
+        run: sudo apt-get update && sudo apt-get install -y libegl1 libgl1 libxcb-cursor0
 
       - name: Abhaengigkeiten installieren
         run: uv sync --extra demo --python ${{ matrix.python-version }}

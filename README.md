@@ -107,12 +107,16 @@ src/promptner/
   experiments/ spec.py (E1-E8) · runner.py (Läufe, Resume) · aggregate.py
   cli.py       promptner run | summary | plots | errors | agreement | models
 src/korrektor/ Studienheft-Korrektor (PDF-Extraktion, PySide6-Oberfläche) - Anwendungs-Demo
-docs/          LOGBUCH.md (Befunde und Entscheidungen mit Zahlen) · plans/ · bericht/GLIEDERUNG.md
+tools/         annotations-oberflaeche/ (Klick-Oberfläche für die Studienheft-Annotation)
 results/       runs/ · summary.csv · plots/ · errors/
 ```
 
-Abweichungen vom Paper und ihre Begründung stehen in `docs/LOGBUCH.md` (Chat-Turns für die
-Beispiele, offene Modelle, Absatzgröße). Regeln für Mitarbeit und Agenten: `AGENTS.md`.
+Drei Abweichungen vom Paper sind bewusst gewählt. Die Few-Shot-Beispiele stehen als eigene
+Frage-Antwort-Turns im Chatverlauf statt in einer einzigen Nachricht, weil das Modell sonst die
+Beispiele noch einmal beantwortet. Statt GPT-4 laufen offene Modelle über den Uni-Endpunkt. Und
+ein Aufruf verarbeitet zwei Sätze statt einen, was die Kosten halbiert und ein halbes F1 kostet;
+die Messreihe dazu steht in `results/summary.csv` unter E10. Regeln für Mitarbeit und Agenten:
+`AGENTS.md`.
 
 ## Lizenz
 

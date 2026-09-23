@@ -136,4 +136,4 @@ Es meldet:
 
 Ein Span-F1 unter etwa 0,80 heißt meist nicht, dass jemand geschludert hat, sondern dass die
 Richtlinien oben eine Lücke haben – dann Regel ergänzen und die betroffenen Sätze nachziehen.
-Der Bericht in `docs/annotator-agreement.md` wird bei jedem Lauf neu geschrieben.
+Der Bericht in `results/annotator-agreement.md` wird bei jedem Lauf neu geschrieben.

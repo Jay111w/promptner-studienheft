@@ -2,7 +2,8 @@
 
 Dieses Repo ist eine Seminarabgabe (*Information Extraction in Python*, Abgabe 30.09.2026).
 Bewertet wird **Verständnis der Methode + Qualität der Experimente**, nicht Codemenge.
-Übergeordneter Plan: `../CODING_PLAN.md`. Detailpläne je Phase: `docs/plans/phase-N.md`.
+Übergeordneter Plan: `../CODING_PLAN.md`. Detailpläne je Phase liegen lokal unter
+`docs/plans/phase-N.md` und sind nicht Teil des Repos.
 
 ## Was hier gebaut wird
 
@@ -41,7 +42,7 @@ Bewertet wird **Verständnis der Methode + Qualität der Experimente**, nicht Co
 
 ## Für Gemini / Antigravity im Besonderen
 
-- Du bekommst Aufträge der Form „Tasks 3–5 aus `docs/plans/phase-N.md`". Baue genau diese, nicht mehr.
+- Du bekommst Aufträge der Form „Tasks 3–5 aus `docs/plans/phase-N.md`" (lokal). Baue genau diese, nicht mehr.
 - Ändere keine Architektur „zur Vereinfachung". Wenn etwas im Plan nicht umsetzbar ist, schreibe es in
   `docs/plans/OPEN_QUESTIONS.md` und mache mit dem nächsten Task weiter.
 - Wenn ein Test nicht grün wird: nicht den Test ändern, sondern in `OPEN_QUESTIONS.md` dokumentieren.

@@ -42,3 +42,6 @@ Thumbs.db
 .cache/
 /results/smoke_*.csv
 !/results/.gitkeep
+
+# Arbeitsunterlagen: bleiben lokal, nicht Teil der Abgabe
+docs/

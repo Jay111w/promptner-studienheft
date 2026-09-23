@@ -151,7 +151,7 @@ def agreement(
     a: Annotated[str, typer.Option("--a", help="JSONL der ersten Annotatorin")],
     b: Annotated[str, typer.Option("--b", help="JSONL der zweiten Annotatorin")],
     out: Annotated[
-        str | None, typer.Option(help="Zieldatei; Standard docs/annotator-agreement.md")
+        str | None, typer.Option(help="Zieldatei; Standard results/annotator-agreement.md")
     ] = None,
     examples: Annotated[int, typer.Option(help="Uneinige Saetze im Bericht")] = 20,
 ) -> None:
@@ -161,7 +161,7 @@ def agreement(
 
     setup_logging(level=get_settings().log_level)
     rep = compare(load_jsonl(a), load_jsonl(b))
-    target = Path(out) if out else Path("docs/annotator-agreement.md")
+    target = Path(out) if out else Path("results/annotator-agreement.md")
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(render_markdown(rep, max_examples=examples), encoding="utf-8")
     typer.echo(f"  Saetze gemeinsam   {rep.n_sentences}")
