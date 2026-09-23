@@ -1,0 +1,1257 @@
+<title>Studienheft-Annotation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap">
+
+<style>
+  :root {
+    color-scheme: light;
+    --papier: #f2f3f0;
+    --karte: #fbfbf9;
+    --tinte: #191d1b;
+    --tinte-leise: #5c6360;
+    --linie: #d5d9d2;
+    --linie-zart: #e6e9e3;
+    --akzent: #1c6e68;
+    --akzent-grund: #dcece9;
+    --per: #a9451c;
+    --per-grund: #f6e3d8;
+    --loc: #2c684a;
+    --loc-grund: #dceade;
+    --org: #2a5a8b;
+    --org-grund: #dbe6f1;
+    --oth: #75479a;
+    --oth-grund: #e8def2;
+    --sans: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+    --serif: "Newsreader", Georgia, "Times New Roman", serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --papier: #14171a;
+      --karte: #1b1f22;
+      --tinte: #e3e7e1;
+      --tinte-leise: #9aa3a0;
+      --linie: #2c3133;
+      --linie-zart: #23282a;
+      --akzent: #57b8b1;
+      --akzent-grund: #16332f;
+      --per: #e08a5f;
+      --per-grund: #3a2318;
+      --loc: #6fbf90;
+      --loc-grund: #17301f;
+      --org: #7fb0e0;
+      --org-grund: #17273a;
+      --oth: #bc92de;
+      --oth-grund: #2a1d3a;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --papier: #14171a;
+    --karte: #1b1f22;
+    --tinte: #e3e7e1;
+    --tinte-leise: #9aa3a0;
+    --linie: #2c3133;
+    --linie-zart: #23282a;
+    --akzent: #57b8b1;
+    --akzent-grund: #16332f;
+    --per: #e08a5f;
+    --per-grund: #3a2318;
+    --loc: #6fbf90;
+    --loc-grund: #17301f;
+    --org: #7fb0e0;
+    --org-grund: #17273a;
+    --oth: #bc92de;
+    --oth-grund: #2a1d3a;
+  }
+
+  body {
+    background: var(--papier);
+    color: var(--tinte);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  * { box-sizing: border-box; }
+
+  .huelle {
+    max-width: 860px;
+    margin: 0 auto;
+    padding-inline: 16px;
+    padding-block: 0 56px;
+  }
+
+  /* ---- Kopfleiste ---- */
+
+  .leiste {
+    position: sticky;
+    top: env(safe-area-inset-top, 0px);
+    z-index: 20;
+    background: color-mix(in srgb, var(--papier) 92%, transparent);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--linie);
+  }
+
+  .leiste-innen {
+    max-width: 860px;
+    margin: 0 auto;
+    padding-inline: 16px;
+    padding-block: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 16px;
+  }
+
+  .marke {
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    margin-right: auto;
+  }
+
+  .marke small {
+    display: block;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--tinte-leise);
+    letter-spacing: 0;
+  }
+
+  .wer-wahl { display: flex; gap: 6px; align-items: center; }
+
+  .wer-wahl span {
+    font-size: 12px;
+    color: var(--tinte-leise);
+  }
+
+  button {
+    font: inherit;
+    color: inherit;
+    background: none;
+    border: 1px solid var(--linie);
+    border-radius: 3px;
+    padding: 5px 11px;
+    cursor: pointer;
+  }
+
+  button:hover { border-color: var(--akzent); }
+  button:focus-visible { outline: 2px solid var(--akzent); outline-offset: 2px; }
+  button[disabled] { opacity: 0.4; cursor: not-allowed; }
+  button[disabled]:hover { border-color: var(--linie); }
+
+  button.aktiv {
+    background: var(--akzent);
+    border-color: var(--akzent);
+    color: var(--papier);
+    font-weight: 500;
+  }
+
+  .blockwahl { display: flex; gap: 0; }
+  .blockwahl button { border-radius: 0; margin-left: -1px; }
+  .blockwahl button:first-child { border-radius: 3px 0 0 3px; margin-left: 0; }
+  .blockwahl button:last-child { border-radius: 0 3px 3px 0; }
+
+  .fortschritt {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--tinte-leise);
+  }
+
+  .balken {
+    flex: 1;
+    height: 3px;
+    background: var(--linie-zart);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .balken i {
+    display: block;
+    height: 100%;
+    background: var(--akzent);
+    width: 0%;
+    transition: width 0.2s;
+  }
+
+  /* ---- Anleitung ---- */
+
+  .anleitung {
+    margin-top: 16px;
+    background: var(--karte);
+    border: 1px solid var(--linie);
+    border-radius: 4px;
+    padding: 18px 22px;
+  }
+
+  .lang { margin-top: 22px; }
+
+  .anleitung .titel {
+    font-family: var(--serif);
+    font-size: 21px;
+    font-weight: 500;
+    line-height: 1.25;
+    margin: 0 0 9px;
+  }
+
+  .anleitung .unter {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--tinte-leise);
+    letter-spacing: 0.02em;
+    margin-bottom: 20px;
+  }
+
+  .anleitung h3 {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--tinte-leise);
+    margin: 24px 0 9px;
+  }
+
+  .anleitung p {
+    margin: 0 0 11px;
+    max-width: 64ch;
+    font-size: 14.5px;
+  }
+
+  .anleitung strong { font-weight: 600; }
+
+  .anleitung code {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    background: var(--linie-zart);
+    padding: 1px 5px;
+    border-radius: 2px;
+  }
+
+  .beispiel {
+    font-family: var(--serif);
+    font-size: 18px;
+    line-height: 1.9;
+    margin: 2px 0 11px;
+  }
+
+  .beispiel .span { cursor: default; }
+
+  .schritte {
+    counter-reset: schritt;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .schritte li {
+    position: relative;
+    padding-left: 36px;
+    margin-bottom: 15px;
+    max-width: 64ch;
+    font-size: 14.5px;
+  }
+
+  .schritte li::before {
+    counter-increment: schritt;
+    content: counter(schritt);
+    position: absolute;
+    left: 0;
+    top: 2px;
+    width: 23px;
+    height: 23px;
+    border-radius: 50%;
+    background: var(--akzent-grund);
+    color: var(--akzent);
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .schritte li b { display: block; font-weight: 600; }
+
+  .anleitung-fuss {
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid var(--linie-zart);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 14px;
+    align-items: center;
+  }
+
+  .anleitung-fuss .los {
+    background: var(--akzent);
+    border-color: var(--akzent);
+    color: var(--papier);
+    font-weight: 500;
+  }
+
+  .anleitung-fuss span {
+    font-size: 12.5px;
+    color: var(--tinte-leise);
+  }
+
+  /* ---- Hinweisstreifen ---- */
+
+  .hinweis {
+    margin-top: 14px;
+    padding: 12px 14px;
+    border-left: 3px solid var(--akzent);
+    background: var(--akzent-grund);
+    border-radius: 0 3px 3px 0;
+    font-size: 13.5px;
+  }
+
+  .hinweis b { font-weight: 600; }
+
+  /* ---- Satzkarte ---- */
+
+  .karte {
+    margin-top: 14px;
+    background: var(--karte);
+    border: 1px solid var(--linie);
+    border-radius: 4px;
+    padding: 22px 22px 18px;
+  }
+
+  .karte-kopf {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--tinte-leise);
+    margin-bottom: 14px;
+  }
+
+  #satz {
+    font-family: var(--serif);
+    font-size: 21px;
+    line-height: 1.85;
+    letter-spacing: 0.005em;
+  }
+
+  .tok {
+    cursor: pointer;
+    padding: 2px 1px;
+    border-radius: 2px;
+    transition: background 0.1s;
+  }
+
+  .tok:hover { background: var(--linie-zart); }
+
+  .tok.gewaehlt {
+    background: var(--akzent);
+    color: var(--karte);
+  }
+
+  .span {
+    border-radius: 3px;
+    padding: 1px 4px 1px 2px;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
+  .span .tok:hover { background: transparent; }
+  .span.gewaehlt { box-shadow: 0 0 0 2px var(--tinte); }
+
+  .span .tag {
+    font-family: var(--mono);
+    font-size: 9.5px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    vertical-align: 0.42em;
+    margin-left: 4px;
+  }
+
+  .l-PER { background: var(--per-grund); color: var(--per); }
+  .l-LOC { background: var(--loc-grund); color: var(--loc); }
+  .l-ORG { background: var(--org-grund); color: var(--org); }
+  .l-OTH { background: var(--oth-grund); color: var(--oth); }
+
+  /* ---- Werkzeugleiste ---- */
+
+  .werkzeuge {
+    margin-top: 16px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .marke-taste {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 7px;
+    border-width: 1px;
+    border-style: solid;
+  }
+
+  .marke-taste kbd {
+    font-family: var(--mono);
+    font-size: 10px;
+    opacity: 0.65;
+  }
+
+  .t-PER { border-color: var(--per); color: var(--per); }
+  .t-LOC { border-color: var(--loc); color: var(--loc); }
+  .t-ORG { border-color: var(--org); color: var(--org); }
+  .t-OTH { border-color: var(--oth); color: var(--oth); }
+  .t-PER:hover { background: var(--per-grund); border-color: var(--per); }
+  .t-LOC:hover { background: var(--loc-grund); border-color: var(--loc); }
+  .t-ORG:hover { background: var(--org-grund); border-color: var(--org); }
+  .t-OTH:hover { background: var(--oth-grund); border-color: var(--oth); }
+
+  .stand {
+    margin-left: auto;
+    font-size: 12.5px;
+    color: var(--tinte-leise);
+    font-family: var(--mono);
+  }
+
+  .blaettern {
+    margin-top: 14px;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .blaettern .weiter {
+    margin-left: auto;
+    background: var(--akzent);
+    border-color: var(--akzent);
+    color: var(--papier);
+    font-weight: 500;
+  }
+
+  /* ---- Raster ---- */
+
+  h2 {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--tinte-leise);
+    margin: 32px 0 10px;
+  }
+
+  .raster {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(34px, 1fr));
+    gap: 4px;
+  }
+
+  .feld {
+    aspect-ratio: 1;
+    border: 1px solid var(--linie);
+    border-radius: 2px;
+    background: var(--karte);
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--tinte-leise);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0;
+    min-width: 0;
+  }
+
+  .feld:hover { border-color: var(--akzent); }
+  .feld.erledigt { background: var(--akzent-grund); color: var(--akzent); border-color: transparent; }
+  .feld.hier { box-shadow: inset 0 0 0 2px var(--tinte); color: var(--tinte); }
+
+  /* ---- Textblöcke ---- */
+
+  .text { font-size: 13.5px; color: var(--tinte-leise); max-width: 62ch; }
+  .text p { margin: 0 0 10px; }
+  .text strong { color: var(--tinte); font-weight: 600; }
+  .text code {
+    font-family: var(--mono);
+    font-size: 12px;
+    background: var(--linie-zart);
+    padding: 1px 4px;
+    border-radius: 2px;
+  }
+
+  .legende { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-bottom: 12px; }
+
+  .legende span {
+    font-size: 12.5px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .punkt { width: 9px; height: 9px; border-radius: 2px; display: inline-block; }
+
+  textarea {
+    width: 100%;
+    min-height: 90px;
+    font-family: var(--mono);
+    font-size: 11px;
+    background: var(--karte);
+    color: var(--tinte);
+    border: 1px solid var(--linie);
+    border-radius: 3px;
+    padding: 9px;
+    resize: vertical;
+  }
+
+  .sicher-zeile { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+
+  .meldung {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--akzent);
+    min-height: 1.4em;
+    display: block;
+    margin-top: 6px;
+  }
+
+  @media (max-width: 560px) {
+    #satz { font-size: 18px; line-height: 1.8; }
+    .karte { padding: 16px; }
+    .stand { margin-left: 0; width: 100%; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
+
+<header class="leiste">
+  <div class="leiste-innen">
+    <div class="marke">
+      Studienheft-Annotation
+      <small id="quelle">zfh-Studienbrief E-Government, S. 27–40</small>
+    </div>
+
+    <div class="wer-wahl" id="werWahl"></div>
+
+    <div class="blockwahl" id="blockWahl"></div>
+
+    <button id="anleitungKnopf">Anleitung</button>
+
+    <div class="fortschritt">
+      <span id="zaehler">—</span>
+      <span class="balken"><i id="balken"></i></span>
+      <span id="prozent">0 %</span>
+    </div>
+  </div>
+</header>
+
+<div class="huelle">
+
+  <section class="anleitung" id="anleitung">
+    <div class="titel">Worum es hier geht</div>
+
+    <p>Wir messen, wie gut ein Sprachmodell in einem Studienbrief die <strong>Eigennamen</strong>
+      findet. Dafür braucht es eine von Hand erstellte Vergleichslösung, und die baut ihr hier.
+      So sieht ein fertiger Satz aus:</p>
+
+    <div class="beispiel">
+      <span class="span l-LOC">Rheinland-Pfalz<b class="tag">LOC</b></span>
+      hat das
+      <span class="span l-OTH">Onlinezugangsgesetz<b class="tag">OTH</b></span>
+      gemeinsam mit dem
+      <span class="span l-ORG">Bundesministerium des Innern<b class="tag">ORG</b></span>
+      umgesetzt .
+    </div>
+
+    <p>Wort anklicken, bei mehrteiligen Namen noch das letzte Wort dazu, dann Taste <code>1</code>
+      bis <code>4</code> für den Typ. <strong>Erst</strong> die 20 Sätze im gemeinsamen Block, allein
+      und ohne Absprache. <strong>Danach</strong> euer eigener Block mit 66 Sätzen, wo ein Modell
+      schon vorgeschlagen hat und ihr nur noch korrigiert.</p>
+
+    <div class="anleitung-fuss">
+      <button id="mehr" aria-expanded="false" aria-controls="anleitungLang">Mehr erfahren</button>
+      <span>Warum das nötig ist, warum die ersten 20 doppelt laufen, was bei Unsicherheit gilt</span>
+    </div>
+
+    <div class="lang" id="anleitungLang" hidden>
+    <div class="unter">Projekt „Information Extraction in Python“ · Experiment E2 · Abgabe 30. September</div>
+
+    <p>Unser Projekt baut ein Verfahren namens <strong>PromptNER</strong> nach. Es bringt ein
+      Sprachmodell dazu, in einem Text alle Eigennamen zu finden und jedem einen Typ zu geben, ohne
+      dass man das Modell dafür trainiert. Man beschreibt ihm die Aufgabe einfach im Prompt. Bis
+      jetzt haben wir das auf zwei öffentlichen Datensätzen gemessen, beides Nachrichtentexte.</p>
+
+    <p>Die offene Frage lautet: <strong>Funktioniert das auch auf einem Text, der nichts mit
+      Nachrichten zu tun hat?</strong> Dafür nehmen wir einen Fernstudien-Studienbrief zum
+      E-Government. Und genau hier kommt ihr ins Spiel.</p>
+
+    <h3>Warum das jemand von Hand machen muss</h3>
+
+    <p>Um zu sagen, wie gut ein Modell ist, braucht man etwas zum Vergleichen: die richtige Lösung.
+      Für unsere zwei Nachrichtendatensätze gibt es die, weil sie irgendwann jemand erstellt hat.
+      Für diesen Studienbrief gibt es sie nicht. Also muss sie jemand erstellen, und das könnt nur
+      ihr sein. Diese von Hand erstellte Lösung heißt <strong>Goldstandard</strong>. Ohne sie gibt
+      es keine Zahl für Experiment E2 und im Bericht bleiben sechs Lücken stehen.</p>
+
+    <h3>Was ihr markiert</h3>
+
+    <p>Eigennamen, also Dinge, die einen Namen tragen, und zwar in vier Sorten.
+      Nicht markiert bleibt alles, was keinen Namen trägt. „das Gesetz“ ist keine Entität,
+      „Onlinezugangsgesetz“ schon. „die Behörde“ ist keine, „Bundesministerium des Innern“ schon.
+      Personen kommen in diesem Text fast nie vor, dafür jede Menge Gesetze und Behörden. Das ist
+      normal für Verwaltungstexte und kein Fehler.</p>
+
+    <h3>Euer Ablauf</h3>
+
+    <ol class="schritte">
+      <li><b>Oben euren Namen wählen.</b> Vorher wird nichts gespeichert. Jeder arbeitet auf
+        seinem eigenen Rechner an seinem eigenen Stand.</li>
+      <li><b>Gemeinsamer Block, 20 Sätze.</b> Diese 20 bearbeitet ihr <strong>beide</strong> und
+        <strong>ohne euch abzusprechen</strong>. Deshalb steht hier auch nichts vor. Der Grund
+        steht gleich unten. Etwa 15 Minuten.</li>
+      <li><b>Euer eigener Block, je 66 Sätze.</b> Hier hat ein Modell schon Vorschläge gemacht,
+        ihr korrigiert sie nur. Ungefähr jeder dritte Vorschlag ist falsch, deshalb bitte jeden
+        Satz wirklich ansehen. Ihr bearbeitet verschiedene Sätze, da gibt es keine Überschneidung.</li>
+      <li><b>Am Ende sichern.</b> Ganz unten auf dieser Seite. Die Datei geht an Joshua, der
+        spielt beide Stände ins Projekt ein.</li>
+    </ol>
+
+    <h3>Warum die ersten 20 Sätze doppelt gemacht werden</h3>
+
+    <p>Wenn zwei Menschen denselben Text unabhängig voneinander bearbeiten und sich nur zu siebzig
+      Prozent einig sind, dann ist die Aufgabe selbst uneindeutig, und vom Modell kann man
+      schlechterdings mehr erwarten als voneinander. Diese Zahl heißt
+      <strong>Inter-Annotator-Agreement</strong> und ist in der Forschung die übliche Qualitätsangabe
+      für einen von Hand erstellten Datensatz. Sie gehört in unseren Bericht.</p>
+
+    <p>Messen lässt sie sich aber nur, wenn ihr euch nicht beeinflusst. Würdet ihr beide denselben
+      Maschinenvorschlag angezeigt bekommen und ihn beide durchwinken, käme eine schöne hohe Zahl
+      heraus, die nichts bedeutet. Deshalb sind diese 20 Sätze leer und deshalb bitte hier nicht
+      miteinander reden. Bei den anderen 132 Sätzen ist das egal.</p>
+
+    <h3>Wenn ihr unsicher seid</h3>
+
+    <p>Im Zweifel lieber nicht markieren und den Satz kurz notieren. Uneinigkeit ist kein Problem,
+      sondern Datenmaterial: Das Werkzeug <code>promptner agreement</code> listet später genau die
+      Sätze auf, bei denen ihr auseinanderliegt, und die geht ihr dann gemeinsam durch. Die
+      ausführlichen Regeln mit allen Grenzfällen stehen im Projekt unter
+      <code>data/studienheft/ANNOTATION.md</code>, die Kurzfassung weiter unten auf dieser Seite.</p>
+
+    <div class="anleitung-fuss">
+      <button class="los" id="anleitungZu">Verstanden, los geht's</button>
+      <span>Über „Anleitung“ in der Kopfleiste kommt ihr jederzeit hierher zurück.</span>
+    </div>
+    </div>
+  </section>
+
+  <div class="hinweis" id="hinweis"></div>
+
+  <section class="karte">
+    <div class="karte-kopf">
+      <span id="satzId">—</span>
+      <span id="satzNr">—</span>
+    </div>
+    <div id="satz">Sätze werden geladen …</div>
+  </section>
+
+  <div class="werkzeuge">
+    <button class="marke-taste t-PER" data-label="PER">Person <kbd>1</kbd></button>
+    <button class="marke-taste t-LOC" data-label="LOC">Ort <kbd>2</kbd></button>
+    <button class="marke-taste t-ORG" data-label="ORG">Organisation <kbd>3</kbd></button>
+    <button class="marke-taste t-OTH" data-label="OTH">Sonstiges <kbd>4</kbd></button>
+    <button id="loeschen">Markierung entfernen <kbd>⌫</kbd></button>
+    <span class="stand" id="stand"></span>
+  </div>
+
+  <div class="blaettern">
+    <button id="zurueck">← Zurück</button>
+    <button id="keine">Keine Entität</button>
+    <button class="weiter" id="weiter">Erledigt, weiter →</button>
+  </div>
+
+  <h2>Satzraster</h2>
+  <div class="raster" id="raster"></div>
+
+  <h2>So wird markiert</h2>
+  <div class="text">
+    <div class="legende">
+      <span><i class="punkt" style="background:var(--per)"></i> PER — Personen</span>
+      <span><i class="punkt" style="background:var(--loc)"></i> LOC — Orte, Länder, Bundesländer</span>
+      <span><i class="punkt" style="background:var(--org)"></i> ORG — Behörden, Institutionen</span>
+      <span><i class="punkt" style="background:var(--oth)"></i> OTH — Gesetze, Programme, Werke</span>
+    </div>
+    <p>Ein Klick auf ein Wort wählt es aus, ein zweiter Klick auf ein späteres Wort dehnt die
+      Auswahl bis dorthin. Dann den Typ wählen, per Taste <code>1</code> bis <code>4</code> oder
+      per Knopf. Ein Klick auf eine fertige Markierung wählt sie erneut aus, <code>⌫</code> entfernt
+      sie wieder. Mit <code>←</code> und <code>→</code> blättert ihr, <code>Enter</code> setzt den
+      Satz auf erledigt und springt weiter.</p>
+    <p>Markiert werden nur <strong>Eigennamen</strong>, ohne Artikel: aus „die EU“ wird nur
+      <code>EU</code>. Gattungsbegriffe wie „die Behörde“ oder „das Gesetz“ bleiben frei, „der
+      Bundesrat“ dagegen nicht. Ableitungen wie „deutsche Verwaltung“ sind keine Entität. Im
+      Zweifel lieber weglassen und den Fall notieren.</p>
+  </div>
+
+  <h2>Zwischenstand sichern</h2>
+  <div class="text">
+    <p>Eure Arbeit liegt im Speicher dieses Browsers, also nur auf diesem Gerät. Sie übersteht das
+      Schließen des Tabs, aber nicht das Leeren der Browserdaten und wandert nicht auf einen anderen
+      Rechner. <strong>Sichert am Ende jeder Sitzung eine Datei</strong> und schickt sie Joshua, der
+      sie ins Projekt einspielt.</p>
+    <div class="sicher-zeile">
+      <button id="datei">Als Datei sichern</button>
+      <button id="kopieren">In die Zwischenablage</button>
+      <button id="zeigen">Text anzeigen</button>
+    </div>
+    <div id="austauschHuelle" hidden>
+      <textarea id="austausch" spellcheck="false" aria-label="Annotationen als JSON"></textarea>
+      <div class="sicher-zeile" style="margin-top:8px">
+        <button id="einlesen">Eingefügten Stand einlesen</button>
+      </div>
+    </div>
+    <span class="meldung" id="meldung"></span>
+  </div>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var LABELS = ["PER", "LOC", "ORG", "OTH"];
+  var LEUTE = [{ id: "joshua", name: "Joshua" }, { id: "alireza", name: "Alireza" }];
+  var SCHLUESSEL = "studienheft-annot-v1";
+
+  var daten = null;
+  var state = { wer: null, block: "gemeinsam", idx: 0, sel: null, spanSel: null };
+  var arbeit = {};   // satzId -> {spans: [...], erledigt: bool}
+
+  // ---------- Speicher ----------
+
+  function speicherLesen(wer) {
+    try {
+      var roh = window.localStorage.getItem(SCHLUESSEL + ":" + wer);
+      return roh ? JSON.parse(roh) : {};
+    } catch (e) {
+      return {};
+    }
+  }
+
+  function speicherSchreiben() {
+    if (!state.wer) return;
+    try {
+      window.localStorage.setItem(SCHLUESSEL + ":" + state.wer, JSON.stringify(arbeit));
+    } catch (e) {
+      melden("Achtung: konnte nicht im Browser speichern. Bitte Text sichern.");
+    }
+  }
+
+  function werMerken() {
+    try { window.localStorage.setItem(SCHLUESSEL + ":wer", state.wer); } catch (e) {}
+  }
+
+  function werLesen() {
+    try { return window.localStorage.getItem(SCHLUESSEL + ":wer"); } catch (e) { return null; }
+  }
+
+  // ---------- Daten ----------
+
+  function blockDaten() {
+    if (!daten) return { saetze: [] };
+    if (state.block === "gemeinsam") {
+      return finde("gemeinsam", null);
+    }
+    return finde("persoenlich", state.wer) || { saetze: [] };
+  }
+
+  function finde(block, owner) {
+    for (var i = 0; i < daten.blocks.length; i++) {
+      var b = daten.blocks[i];
+      if (b.block === block && (owner === null || b.owner === owner)) return b;
+    }
+    return null;
+  }
+
+  function satzListe() { return blockDaten().saetze; }
+
+  function aktuell() {
+    var liste = satzListe();
+    if (!liste.length) return null;
+    if (state.idx >= liste.length) state.idx = liste.length - 1;
+    return liste[state.idx];
+  }
+
+  /** Eintrag holen; beim ersten Besuch den Maschinenvorschlag übernehmen. */
+  function eintrag(satz) {
+    if (!arbeit[satz.id]) {
+      var saat = state.block === "persoenlich" ? satz.vorschlag : [];
+      arbeit[satz.id] = { spans: saat.map(function (s) {
+        return { start: s.start, end: s.end, label: s.label };
+      }), erledigt: false };
+    }
+    return arbeit[satz.id];
+  }
+
+  function spansVon(satz) { return eintrag(satz).spans; }
+
+  // ---------- Zeichnen ----------
+
+  function zeichneAlles() {
+    zeichneWer();
+    zeichneBlockWahl();
+    zeichneHinweis();
+    zeichneSatz();
+    zeichneRaster();
+    zeichneFortschritt();
+    zeichneStand();
+  }
+
+  function zeichneWer() {
+    var huelle = document.getElementById("werWahl");
+    huelle.innerHTML = "";
+    if (!state.wer) {
+      var frage = document.createElement("span");
+      frage.textContent = "Wer bist du?";
+      huelle.appendChild(frage);
+    }
+    LEUTE.forEach(function (p) {
+      var b = document.createElement("button");
+      b.textContent = p.name;
+      if (state.wer === p.id) b.className = "aktiv";
+      b.addEventListener("click", function () {
+        state.wer = p.id;
+        arbeit = speicherLesen(p.id);
+        werMerken();
+        state.idx = 0;
+        state.sel = null;
+        state.spanSel = null;
+        zeichneAlles();
+      });
+      huelle.appendChild(b);
+    });
+  }
+
+  function zeichneBlockWahl() {
+    var huelle = document.getElementById("blockWahl");
+    huelle.innerHTML = "";
+    var teile = [
+      { id: "gemeinsam", text: "Gemeinsamer Block" },
+      { id: "persoenlich", text: "Mein Block" }
+    ];
+    teile.forEach(function (t) {
+      var b = document.createElement("button");
+      b.textContent = t.text;
+      if (state.block === t.id) b.className = "aktiv";
+      b.disabled = t.id === "persoenlich" && !state.wer;
+      b.addEventListener("click", function () {
+        state.block = t.id;
+        state.idx = 0;
+        state.sel = null;
+        state.spanSel = null;
+        zeichneAlles();
+      });
+      huelle.appendChild(b);
+    });
+  }
+
+  function zeichneHinweis() {
+    var el = document.getElementById("hinweis");
+    if (!state.wer) {
+      el.innerHTML = "<b>Erst oben den Namen wählen.</b> Solange keiner gewählt ist, wird nichts " +
+        "gespeichert. Der Satz unten zeigt schon, wie es aussieht.";
+      return;
+    }
+    if (state.block === "gemeinsam") {
+      el.innerHTML = "<b>Gemeinsamer Block, 20 Sätze, ohne Vorschläge.</b> Diesen Block bearbeitet " +
+        "ihr beide unabhängig und ohne Absprache. Nur er geht in die Übereinstimmungsmessung ein, " +
+        "deshalb steht hier nichts vor.";
+    } else {
+      el.innerHTML = "<b>Dein Block, 66 Sätze, mit Vorschlägen.</b> Ein Modell hat vorgelegt, ihr " +
+        "korrigiert. Etwa jeder dritte Vorschlag ist falsch, häufig Fachbegriffe wie " +
+        "„E-Government“ oder ganze Aufzählungszeilen. Jeden Satz trotzdem ansehen.";
+    }
+  }
+
+  function tokenEl(text, i, inSpan) {
+    var el = document.createElement("span");
+    el.className = "tok";
+    el.dataset.i = String(i);
+    el.textContent = text;
+    if (!inSpan && state.sel && i >= state.sel.von && i <= state.sel.bis) {
+      el.className += " gewaehlt";
+    }
+    return el;
+  }
+
+  function zeichneSatz() {
+    var ziel = document.getElementById("satz");
+    var satz = aktuell();
+    ziel.innerHTML = "";
+    if (!satz) {
+      ziel.textContent = "Kein Satz in diesem Block.";
+      document.getElementById("satzId").textContent = "—";
+      document.getElementById("satzNr").textContent = "—";
+      return;
+    }
+    document.getElementById("satzId").textContent = satz.id;
+    document.getElementById("satzNr").textContent =
+      "Satz " + (state.idx + 1) + " von " + satzListe().length;
+
+    var spans = spansVon(satz);
+    var i = 0;
+    while (i < satz.tokens.length) {
+      var sp = null;
+      for (var k = 0; k < spans.length; k++) {
+        if (spans[k].start === i) { sp = spans[k]; break; }
+      }
+      if (sp) {
+        var mark = document.createElement("span");
+        mark.className = "span l-" + sp.label + (state.spanSel === sp.start ? " gewaehlt" : "");
+        mark.dataset.start = String(sp.start);
+        for (var j = sp.start; j < sp.end; j++) {
+          mark.appendChild(tokenEl(satz.tokens[j], j, true));
+          if (j < sp.end - 1) mark.appendChild(document.createTextNode(" "));
+        }
+        var tag = document.createElement("b");
+        tag.className = "tag";
+        tag.textContent = sp.label;
+        mark.appendChild(tag);
+        ziel.appendChild(mark);
+        i = sp.end;
+      } else {
+        ziel.appendChild(tokenEl(satz.tokens[i], i, false));
+        i += 1;
+      }
+      ziel.appendChild(document.createTextNode(" "));
+    }
+  }
+
+  function zeichneRaster() {
+    var ziel = document.getElementById("raster");
+    ziel.innerHTML = "";
+    satzListe().forEach(function (satz, n) {
+      var b = document.createElement("button");
+      b.className = "feld";
+      if (arbeit[satz.id] && arbeit[satz.id].erledigt) b.className += " erledigt";
+      if (n === state.idx) b.className += " hier";
+      b.textContent = String(n + 1);
+      b.title = satz.id;
+      b.addEventListener("click", function () {
+        state.idx = n;
+        state.sel = null;
+        state.spanSel = null;
+        zeichneSatz();
+        zeichneRaster();
+        zeichneStand();
+      });
+      ziel.appendChild(b);
+    });
+  }
+
+  function zeichneFortschritt() {
+    var liste = satzListe();
+    var fertig = 0;
+    liste.forEach(function (s) { if (arbeit[s.id] && arbeit[s.id].erledigt) fertig += 1; });
+    var anteil = liste.length ? Math.round((fertig / liste.length) * 100) : 0;
+    document.getElementById("zaehler").textContent = fertig + " / " + liste.length;
+    document.getElementById("balken").style.width = anteil + "%";
+    document.getElementById("prozent").textContent = anteil + " %";
+  }
+
+  function zeichneStand() {
+    var satz = aktuell();
+    var el = document.getElementById("stand");
+    if (!satz) { el.textContent = ""; return; }
+    var n = spansVon(satz).length;
+    var teile = [n + (n === 1 ? " Markierung" : " Markierungen")];
+    if (state.sel) teile.push("Auswahl offen");
+    if (arbeit[satz.id] && arbeit[satz.id].erledigt) teile.push("erledigt");
+    el.textContent = teile.join(" · ");
+  }
+
+  function melden(text) {
+    var el = document.getElementById("meldung");
+    el.textContent = text;
+    if (text) {
+      window.setTimeout(function () {
+        if (el.textContent === text) el.textContent = "";
+      }, 6000);
+    }
+  }
+
+  // ---------- Bearbeiten ----------
+
+  function setzeLabel(label) {
+    var satz = aktuell();
+    if (!satz || !state.wer) return;
+
+    if (state.spanSel !== null) {
+      var liste = spansVon(satz);
+      for (var i = 0; i < liste.length; i++) {
+        if (liste[i].start === state.spanSel) { liste[i].label = label; break; }
+      }
+      nachAenderung();
+      return;
+    }
+    if (!state.sel) return;
+
+    var von = state.sel.von;
+    var bis = state.sel.bis + 1;
+    var behalten = spansVon(satz).filter(function (s) {
+      return s.end <= von || s.start >= bis;
+    });
+    behalten.push({ start: von, end: bis, label: label });
+    behalten.sort(function (a, b) { return a.start - b.start; });
+    eintrag(satz).spans = behalten;
+    state.sel = null;
+    state.spanSel = null;
+    nachAenderung();
+  }
+
+  function entferne() {
+    var satz = aktuell();
+    if (!satz || !state.wer) return;
+    if (state.sel) { state.sel = null; nachAenderung(); return; }
+    if (state.spanSel === null) return;
+    eintrag(satz).spans = spansVon(satz).filter(function (s) { return s.start !== state.spanSel; });
+    state.spanSel = null;
+    nachAenderung();
+  }
+
+  function nachAenderung() {
+    speicherSchreiben();
+    zeichneSatz();
+    zeichneStand();
+    zeichneRaster();
+    zeichneFortschritt();
+  }
+
+  function springe(delta, erledigen) {
+    var satz = aktuell();
+    if (satz && erledigen && state.wer) eintrag(satz).erledigt = true;
+    var liste = satzListe();
+    var neu = state.idx + delta;
+    if (neu < 0) neu = 0;
+    if (neu > liste.length - 1) neu = liste.length - 1;
+    state.idx = neu;
+    state.sel = null;
+    state.spanSel = null;
+    speicherSchreiben();
+    zeichneSatz();
+    zeichneRaster();
+    zeichneFortschritt();
+    zeichneStand();
+  }
+
+  // ---------- Austausch ----------
+
+  function baueAusgabe() {
+    var raus = { annotator: state.wer, gespeichert: new Date().toISOString(), saetze: [] };
+    daten.blocks.forEach(function (b) {
+      if (b.block === "persoenlich" && b.owner !== state.wer) return;
+      b.saetze.forEach(function (satz) {
+        var e = arbeit[satz.id];
+        if (!e) return;
+        raus.saetze.push({
+          id: satz.id,
+          block: b.block,
+          erledigt: !!e.erledigt,
+          tokens: satz.tokens,
+          spans: e.spans
+        });
+      });
+    });
+    return JSON.stringify(raus, null, 1);
+  }
+
+  function dateiname() {
+    return "annotation_" + (state.wer || "unbekannt") + ".json";
+  }
+
+  // ---------- Verdrahtung ----------
+
+  document.getElementById("satz").addEventListener("click", function (ev) {
+    if (!state.wer) { melden("Erst oben den Namen wählen."); return; }
+    var satz = aktuell();
+    if (!satz) return;
+
+    var span = ev.target.closest(".span");
+    if (span) {
+      var start = parseInt(span.dataset.start, 10);
+      state.spanSel = state.spanSel === start ? null : start;
+      state.sel = null;
+      zeichneSatz();
+      zeichneStand();
+      return;
+    }
+
+    var tok = ev.target.closest(".tok");
+    if (!tok) return;
+    var i = parseInt(tok.dataset.i, 10);
+    state.spanSel = null;
+    if (!state.sel) {
+      state.sel = { von: i, bis: i, anker: i };
+    } else if (i === state.sel.anker && state.sel.von === state.sel.bis) {
+      state.sel = null;
+    } else {
+      state.sel = {
+        von: Math.min(state.sel.anker, i),
+        bis: Math.max(state.sel.anker, i),
+        anker: state.sel.anker
+      };
+    }
+    zeichneSatz();
+    zeichneStand();
+  });
+
+  Array.prototype.forEach.call(document.querySelectorAll("[data-label]"), function (b) {
+    b.addEventListener("click", function () { setzeLabel(b.dataset.label); });
+  });
+
+  /** Die Kurzfassung steht immer da; der ausführliche Teil klappt auf Wunsch auf. Zugeklappt
+   *  bleibt die Satzkarte im Blickfeld, und darum geht es. */
+  function langZeigen(offen) {
+    document.getElementById("anleitungLang").hidden = !offen;
+    var mehr = document.getElementById("mehr");
+    mehr.textContent = offen ? "Weniger" : "Mehr erfahren";
+    mehr.setAttribute("aria-expanded", offen ? "true" : "false");
+    document.getElementById("anleitungKnopf").className = offen ? "aktiv" : "";
+  }
+
+  document.getElementById("mehr").addEventListener("click", function () {
+    langZeigen(document.getElementById("anleitungLang").hidden);
+  });
+
+  document.getElementById("anleitungKnopf").addEventListener("click", function () {
+    var offen = document.getElementById("anleitungLang").hidden;
+    langZeigen(offen);
+    if (offen) document.getElementById("anleitung").scrollIntoView({ block: "start" });
+  });
+
+  document.getElementById("anleitungZu").addEventListener("click", function () {
+    langZeigen(false);
+    document.getElementById("satz").scrollIntoView({ block: "center" });
+  });
+
+  document.getElementById("loeschen").addEventListener("click", entferne);
+  document.getElementById("zurueck").addEventListener("click", function () { springe(-1, false); });
+  document.getElementById("weiter").addEventListener("click", function () { springe(1, true); });
+
+  document.getElementById("keine").addEventListener("click", function () {
+    var satz = aktuell();
+    if (!satz || !state.wer) return;
+    eintrag(satz).spans = [];
+    state.sel = null;
+    state.spanSel = null;
+    springe(1, true);
+  });
+
+  document.addEventListener("keydown", function (ev) {
+    if (ev.target.tagName === "TEXTAREA" || ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    var n = LABELS.indexOf({ "1": "PER", "2": "LOC", "3": "ORG", "4": "OTH" }[ev.key] || "");
+    if (n >= 0) { ev.preventDefault(); setzeLabel(LABELS[n]); return; }
+    if (ev.key === "Backspace" || ev.key === "Delete") { ev.preventDefault(); entferne(); return; }
+    if (ev.key === "Escape") { state.sel = null; state.spanSel = null; zeichneSatz(); zeichneStand(); return; }
+    if (ev.key === "ArrowRight") { ev.preventDefault(); springe(1, false); return; }
+    if (ev.key === "ArrowLeft") { ev.preventDefault(); springe(-1, false); return; }
+    if (ev.key === "Enter") { ev.preventDefault(); springe(1, true); }
+  });
+
+  document.getElementById("zeigen").addEventListener("click", function () {
+    var huelle = document.getElementById("austauschHuelle");
+    huelle.hidden = !huelle.hidden;
+    if (!huelle.hidden && state.wer) document.getElementById("austausch").value = baueAusgabe();
+  });
+
+  document.getElementById("kopieren").addEventListener("click", function () {
+    if (!state.wer) { melden("Erst oben den Namen wählen."); return; }
+    var text = baueAusgabe();
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () {
+        melden("Kopiert. Jetzt in eine Nachricht oder Datei einfügen.");
+      }, function () {
+        zeigeZumMarkieren(text);
+      });
+    } else {
+      zeigeZumMarkieren(text);
+    }
+  });
+
+  function zeigeZumMarkieren(text) {
+    var huelle = document.getElementById("austauschHuelle");
+    huelle.hidden = false;
+    var feld = document.getElementById("austausch");
+    feld.value = text;
+    feld.focus();
+    feld.select();
+    melden("Kopieren ging nicht automatisch. Der Text ist markiert, bitte selbst kopieren.");
+  }
+
+  document.getElementById("einlesen").addEventListener("click", function () {
+    if (!state.wer) { melden("Erst oben den Namen wählen."); return; }
+    var roh = document.getElementById("austausch").value.trim();
+    if (!roh) { melden("Kein Text im Feld."); return; }
+    var gelesen;
+    try {
+      gelesen = JSON.parse(roh);
+    } catch (e) {
+      melden("Das ist kein gültiges JSON.");
+      return;
+    }
+    if (!gelesen || !Array.isArray(gelesen.saetze)) { melden("Dem Text fehlt die Liste der Sätze."); return; }
+    var n = 0;
+    gelesen.saetze.forEach(function (s) {
+      if (!s || typeof s.id !== "string" || !Array.isArray(s.spans)) return;
+      arbeit[s.id] = { spans: s.spans, erledigt: !!s.erledigt };
+      n += 1;
+    });
+    speicherSchreiben();
+    zeichneAlles();
+    melden(n + " Sätze eingelesen.");
+  });
+
+  var speichern = null;
+  document.getElementById("datei").addEventListener("click", function () {
+    if (!state.wer) { melden("Erst oben den Namen wählen."); return; }
+    if (!speichern) { zeigeZumMarkieren(baueAusgabe()); return; }
+    speichern.save({ filename: dateiname(), data: baueAusgabe() }).then(function () {
+      melden("Datei gesichert.");
+    }, function (fehler) {
+      if (fehler && fehler.code === "declined") { melden("Abgebrochen."); return; }
+      zeigeZumMarkieren(baueAusgabe());
+    });
+  });
+
+  // ---------- Start ----------
+
+  langZeigen(false);
+
+  fetch("saetze.json").then(function (a) {
+    if (!a.ok) throw new Error("HTTP " + a.status);
+    return a.json();
+  }).then(function (geladen) {
+    daten = geladen;
+    var gemerkt = werLesen();
+    if (gemerkt === "joshua" || gemerkt === "alireza") {
+      state.wer = gemerkt;
+      arbeit = speicherLesen(gemerkt);
+    }
+    zeichneAlles();
+  }).catch(function () {
+    document.getElementById("satz").textContent =
+      "Die Sätze konnten nicht geladen werden. Bitte die Seite neu laden.";
+  });
+
+  if (window.claude && window.claude.use) {
+    window.claude.use("downloads").then(function (d) { speichern = d; }, function () {});
+  }
+}());
+</script>
