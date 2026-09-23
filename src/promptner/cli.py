@@ -1,4 +1,4 @@
-"""Kommandozeile: ``promptner run | summary | plots | models``."""
+"""Kommandozeile: ``promptner run | summary | plots | errors | agreement | models``."""
 
 from __future__ import annotations
 
@@ -143,6 +143,33 @@ def errors(
         f"  halluziniert {rep.n_unmatched} | unbekannter Typ {rep.n_unknown_type} | "
         f"Format-Fehler {rep.n_parse_fail} | Retries {rep.n_retries}"
     )
+    typer.echo(f"-> {target}")
+
+
+@app.command()
+def agreement(
+    a: Annotated[str, typer.Option("--a", help="JSONL der ersten Annotatorin")],
+    b: Annotated[str, typer.Option("--b", help="JSONL der zweiten Annotatorin")],
+    out: Annotated[
+        str | None, typer.Option(help="Zieldatei; Standard docs/annotator-agreement.md")
+    ] = None,
+    examples: Annotated[int, typer.Option(help="Uneinige Saetze im Bericht")] = 20,
+) -> None:
+    """Uebereinstimmung zweier Annotationen: Span-F1, Cohen's Kappa, uneinige Saetze."""
+    from promptner.data import load_jsonl
+    from promptner.eval.agreement import compare, render_markdown
+
+    setup_logging(level=get_settings().log_level)
+    rep = compare(load_jsonl(a), load_jsonl(b))
+    target = Path(out) if out else Path("docs/annotator-agreement.md")
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(render_markdown(rep, max_examples=examples), encoding="utf-8")
+    typer.echo(f"  Saetze gemeinsam   {rep.n_sentences}")
+    typer.echo(f"  Span-F1            {rep.span_f1:.3f}")
+    typer.echo(f"  Kappa je Token     {rep.token_kappa:.3f}")
+    typer.echo(f"  uneinige Saetze    {len(rep.disagreements)}")
+    if rep.unknown_labels:
+        typer.echo(f"  ACHTUNG unbekannte Labels: {', '.join(sorted(rep.unknown_labels))}")
     typer.echo(f"-> {target}")
 
 

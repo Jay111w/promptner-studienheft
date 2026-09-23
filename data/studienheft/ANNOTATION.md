@@ -34,3 +34,27 @@ Datensatz für das Domain-Transfer-Experiment (E2) – und eure sichtbare Eigenl
 - Artikel gehören nicht dazu („die EU" → nur `EU`).
 - Bei Zweifel: lieber weglassen und im Bericht als Grenzfall erwähnen.
 - Jeder Satz wird von **einer** Person annotiert, 20 Sätze von beiden – daraus berechnen wir die Übereinstimmung (Inter-Annotator-Agreement) für den Bericht.
+
+## Übereinstimmung prüfen (die 20 gemeinsamen Sätze)
+
+Beide legen ihre Fassung getrennt ab, dann:
+
+```
+uv run promptner agreement --a data/studienheft/gold_alireza.jsonl \
+                           --b data/studienheft/gold_joshua.jsonl
+```
+
+Das Werkzeug vergleicht nur Sätze, deren `id` in beiden Dateien vorkommt, und bricht ab, wenn
+die Tokens derselben `id` voneinander abweichen (dann wurde nicht dieselbe Vorlage annotiert).
+Es meldet:
+
+- **Span-F1** – exakte Grenzen *und* Typ, dieselbe Metrik wie bei den Modellläufen. Diese Zahl
+  kommt in den Bericht, weil sie direkt neben den Modellzahlen lesbar ist.
+- **Cohen's Kappa** je Token über die BIO-Tags – die in der Literatur übliche Zahl. Sie fällt
+  bei NER optimistisch aus, weil die meisten Tokens `O` sind; deshalb steht sie nur daneben.
+- **Uneinige Sätze** mit beiden Lesarten – das ist die Liste, die ihr gemeinsam durchgeht.
+  Danach entscheidet ihr je Fall und schreibt die Einigung in `gold.jsonl`.
+
+Ein Span-F1 unter etwa 0,80 heißt meist nicht, dass jemand geschludert hat, sondern dass die
+Richtlinien oben eine Lücke haben – dann Regel ergänzen und die betroffenen Sätze nachziehen.
+Der Bericht in `docs/annotator-agreement.md` wird bei jedem Lauf neu geschrieben.
