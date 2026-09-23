@@ -24,10 +24,14 @@ _TITLES = {
 
 
 def _variant_order(row: pd.Series) -> float:
-    """Numerische Reihenfolge fuer k=...; sonst 'mit' vor 'ohne', Rest alphabetisch."""
+    """Numerische Reihenfolge fuer k=...; sonst 'mit' vor 'ohne', Rest alphabetisch.
+
+    E8 setzt mehrere Angaben zusammen (``k=0, text, retry=an``), deshalb zaehlt nur die
+    fuehrende Zahl bis zum ersten Komma.
+    """
     v = str(row["variant"])
     if v.startswith("k=") or v.startswith("p="):
-        return float(v[2:])
+        return float(v[2:].split(",")[0])
     if v.startswith("mit") or v.startswith("text"):
         return 0.0
     if v.startswith("ohne") or v.startswith("nur") or v.startswith("json"):
