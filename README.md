@@ -14,12 +14,28 @@ auf Token-Spans abgebildet und mit seqeval (Entity-Level-F1) bewertet.
 ```bash
 uv sync --extra demo                    # Python ≥ 3.11; --extra demo nur für die PySide6-Oberfläche
 cp .env.example .env                    # KISSKI_API_KEY=... eintragen (nie committen)
-uv run pytest -m "not live and not network"   # 190+ Tests, ohne Netz und ohne Key
+uv run pytest -m "not live and not network"   # 220+ Tests, ohne Netz und ohne Key
 uv run promptner models                 # prüft Key und listet die Modell-IDs
 uv run scripts/run_smoke.py --limit 20  # erster echter Lauf: 20 CoNLL-Dev-Sätze, F1 in ~10 s
 ```
 
 Ohne Key laufen alle Unit-Tests (Fake-LLM). Mit Key kostet jeder Aufruf Budget – siehe unten.
+
+### Ergebnisse ohne Key nachspielen
+
+Alle Antworten des Endpunkts liegen als Kopie im Repository (`replay-cache/`, rund 1 MB). Damit
+lässt sich jedes Experiment **ohne API-Key, ohne Kosten und mit identischen Zahlen** neu
+rechnen – der Lauf holt jede Antwort aus dem Cache, statt zu fragen:
+
+```bash
+CACHE_DIR=replay-cache RESULTS_DIR=nachgespielt uv run promptner run --experiment E4 --seeds 1
+# -> F1=0.8153 (volle Konfiguration) und F1=0.8214 (ohne Definition), in ~3 Sekunden
+```
+
+Das ist der empfohlene Weg, die Ergebnisse dieser Arbeit zu prüfen: Parser, Alignment, Metrik
+und Aggregation laufen vollständig durch, nur der Netzaufruf entfällt. Geprüft mit einem
+frischen Klon ohne `.env`. Die Kopie entsteht mit `uv run scripts/export_cache.py` (SQLite-
+Backup-API, funktioniert auch während ein Experiment schreibt).
 
 ## Experimente reproduzieren
 
@@ -37,7 +53,7 @@ Prompts werden aus dem Antwort-Cache (`.cache/llm`) bedient, abgebrochene Läufe
 | E6 | Ablation Few-Shot | k ∈ {0, 2, 5, 10} |
 | E7 | Ablation Kandidatenliste | `use_candidates` |
 | E8 | Ausgabeformat + Retry | Text (Paper) vs. JSON-Schema, Retry an/aus |
-| E9 | Klassische Baseline | `scripts/train_bert.py` (BERT + Linear-Kopf, lokal) |
+| E9 | Klassische Baseline | `scripts/train_bert.py` (BERT + Linear-Kopf, lokal; `--dataset germeval14 --model bert-base-german-cased` für die deutsche Referenz) |
 | E10 | Sätze je Aufruf | `paragraph_size` ∈ {1, 2, 3, 5} |
 
 ```bash
@@ -73,6 +89,7 @@ ausgenommen.
 ```bash
 uv run scripts/annotate_template.py heft.pdf --pages 5-12 --out data/studienheft/raw.jsonl
 # annotieren nach data/studienheft/ANNOTATION.md -> data/studienheft/gold.jsonl
+uv run promptner agreement --a gold_a.jsonl --b gold_b.jsonl   # Uebereinstimmung der 20 gemeinsamen Saetze
 uv run promptner run --experiment E2 --datasets studienheft
 ```
 
@@ -88,7 +105,7 @@ src/promptner/
   data/        loaders.py (CoNLL-2003, GermEval 2014, JSONL) · bio.py · segment.py
   eval/        metrics.py (seqeval) · error_analysis.py · plots.py
   experiments/ spec.py (E1-E8) · runner.py (Läufe, Resume) · aggregate.py
-  cli.py       promptner run | summary | plots | errors | models
+  cli.py       promptner run | summary | plots | errors | agreement | models
 src/korrektor/ Studienheft-Korrektor (PDF-Extraktion, PySide6-Oberfläche) - Anwendungs-Demo
 docs/          LOGBUCH.md (Befunde und Entscheidungen mit Zahlen) · plans/ · bericht/GLIEDERUNG.md
 results/       runs/ · summary.csv · plots/ · errors/

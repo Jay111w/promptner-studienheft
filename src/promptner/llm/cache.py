@@ -38,5 +38,9 @@ class ResponseCache:
     def put(self, key: str, value: str) -> None:
         self._cache.set(key, value)
 
+    def __len__(self) -> int:
+        """Anzahl gespeicherter Antworten - fuer den Export und die Budget-Buchfuehrung."""
+        return len(self._cache)
+
     def close(self) -> None:
         self._cache.close()
