@@ -3,9 +3,24 @@
 Ziel: ~100 Sätze aus einem Studienheft mit Entitäten beschriften. Das ist euer eigener
 Datensatz für das Domain-Transfer-Experiment (E2) – und eure sichtbare Eigenleistung.
 
+## Die Quelle
+
+Wir annotieren den Studienbrief **„Grundlagen des E-Governments und des Informationsmanagements"**
+aus dem MBA-Fernstudienprogramm der Hochschule Koblenz (zfh), als öffentliche Leseprobe abrufbar
+unter <https://www.hs-koblenz.de/wiso/mba-fernstudienprogramm/fuer-studieninteressierte/leseproben-studienbriefe>.
+Das PDF liegt als `data/studienheft/quelle.pdf` im Arbeitsverzeichnis und wird nicht versioniert.
+
+Warum dieser Text und nicht das ILS-Heft zu Webvideos, das uns ebenfalls vorlag: In 1 005 Sätzen
+jenes Hefts tragen nur 53 einen Eigennamen, also 5 %. Hier sind es rund ein Drittel. Für eine
+Messung mit 100 Sätzen ist das der Unterschied zwischen etwa 20 und etwa 50 Entitäten.
+
+**Gewählter Bereich:** Seiten 27 bis 40, das sind die Kapitel zu den rechtlichen Grundlagen.
+Die Vorlage enthält 152 Sätze, ihr braucht davon etwa 100 brauchbare.
+
 ## Ablauf (ca. 2 Stunden)
 
-1. Vorlage erzeugen: `uv run scripts/annotate_template.py <heft.pdf> --pages 5-12 --out data/studienheft/raw.jsonl`
+1. Vorlage erzeugen (schon geschehen, der Befehl steht hier zum Nachvollziehen):
+   `uv run scripts/annotate_template.py data/studienheft/quelle.pdf --pages 27-40 --out data/studienheft/raw.jsonl`
 2. `raw.jsonl` öffnen (VS Code / Antigravity). Eine Zeile = ein Satz:
    ```json
    {"id": "studienheft-0", "tokens": ["Firmengründer", "Wolf", "Peter", "Bree", "arbeitete", "bei", "der", "EU", "."], "spans": [], "source": "studienheft"}
@@ -26,6 +41,26 @@ Datensatz für das Domain-Transfer-Experiment (E2) – und eure sichtbare Eigenl
 | `LOC` | Orte, Länder, Regionen, Gebäude mit Eigennamen | „Berlin", „Deutschland", „Alpen" |
 | `ORG` | Organisationen, Firmen, Behörden, Institutionen | „EU", „Deutsche Bahn", „Universität Hildesheim" |
 | `OTH` | Sonstige Eigennamen: Produkte, Werke, Ereignisse, Gesetze | „Windows 11", „Grundgesetz", „Olympische Spiele 2024" |
+
+## Diese Quelle im Besonderen
+
+Der Text handelt von Verwaltungsdigitalisierung, deshalb sieht die Typverteilung anders aus als
+in den Nachrichtentexten von CoNLL und GermEval. Häufig sind Gesetze und Programme, also `OTH`,
+gefolgt von Behörden und Institutionen als `ORG`. Orte kommen fast nur als Staaten und
+Bundesländer vor, Personen so gut wie nie. Diese Schieflage ist kein Fehler der Auswahl, sondern
+ein Merkmal der Domäne, und sie gehört genau so in den Bericht.
+
+Drei Entscheidungen, die wir vorab festlegen, damit beide gleich annotieren:
+
+| Fall | Typ | Begründung |
+|---|---|---|
+| `Deutschland`, `Rheinland-Pfalz`, `Schleswig-Holstein` | `LOC` | Staaten und Bundesländer immer als Ort, auch wenn sie im Satz handeln („Rheinland-Pfalz definiert hierin …“) |
+| `Europäische Union`, `Bundesministerium des Innern`, `KGSt` | `ORG` | benannte Institutionen und Behörden |
+| `Onlinezugangsgesetz`, `OZG`, `EGovGRP`, `DSGVO`, `eEurope2002` | `OTH` | Gesetze, Verordnungen und benannte Programme |
+
+Abkürzungen werden wie der ausgeschriebene Name behandelt, also ist `OZG` ein eigener Span vom
+Typ `OTH`. Gattungsbegriffe bleiben unmarkiert, `die Behörde`, `das Gesetz` und `der Bund` sind
+also keine Entitäten, `der Bundesrat` dagegen schon.
 
 ## Regeln
 

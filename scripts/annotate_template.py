@@ -24,6 +24,7 @@ def _read(path: Path, pages: str | None) -> str:
         return path.read_text(encoding="utf-8")
     from korrektor.domain import PageRange
     from korrektor.services.pdf.extractor import PdfDocument
+    from promptner.data.segment import strip_repeated_lines
 
     with PdfDocument(path) as doc:
         if pages:
@@ -31,7 +32,8 @@ def _read(path: Path, pages: str | None) -> str:
             rng = PageRange(start=int(a) - 1, end=int(b or a) - 1)
         else:
             rng = PageRange(start=0, end=doc.page_count - 1)
-        return "\n".join(p.text for p in doc.extract_range(rng))
+        # Seitenweise, damit die auf jeder Seite wiederkehrende Kopfzeile erkennbar bleibt.
+        return strip_repeated_lines(p.text for p in doc.extract_range(rng))
 
 
 @app.command()
