@@ -7,6 +7,10 @@ Bei Formatbruch (``ParseError``) wird einmal erneut gefragt, mit dem Hinweis auf
 das erwartete Format (Agentic-Retry-Muster aus Woche 10). Scheitert auch das,
 gilt der Satz als "keine Entitaeten" und wird als ``parse_ok=False`` markiert –
 die Schema-Fehlerquote ist selbst eine Messgroesse (Ablation E7).
+
+Eine leere Antwort des Endpunkts zaehlt als derselbe Fall. Sie kam in der Nacht
+zum 24.09. bei ``qwen3.8-27b`` auf GermEval vor und riss dort das ganze
+Experiment mit; seither landet sie in derselben Schleife.
 """
 
 from __future__ import annotations
@@ -16,7 +20,7 @@ from dataclasses import replace
 
 from promptner.config import get_logger
 from promptner.domain import Prediction, PromptConfig, Sentence, Span
-from promptner.errors import ParseError
+from promptner.errors import ErrorCode, LlmError, ParseError
 from promptner.llm.cache import ResponseCache, cache_key
 from promptner.llm.client import ChatRequest, LlmClient
 from promptner.llm.parser import align, parse_answer
@@ -45,7 +49,17 @@ def _ask(
         hit = cache.get(key)
         if hit is not None:
             return hit
-    raw = client.complete(request)
+    try:
+        raw = client.complete(request)
+    except LlmError as exc:
+        # Eine leere Antwort ist derselbe Fall wie ein kaputtes Format: Das Modell hat nichts
+        # Verwertbares geliefert. Sie wandert deshalb in die Retry-Schleife unten statt das
+        # ganze Experiment abzubrechen - und zaehlt am Ende als Schema-Fehler (E7/E8).
+        # Nicht gecacht, damit der naechste Lauf es erneut versucht.
+        if exc.code is not ErrorCode.LLM_EMPTY_RESPONSE:
+            raise
+        log.warning("Leere Antwort vom Modell, wird wie ein Formatbruch behandelt.")
+        return ""
     if cache is not None and key is not None:
         cache.put(key, raw)
     return raw

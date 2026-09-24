@@ -3,6 +3,7 @@
 import pytest
 
 from promptner.domain import PromptConfig, Sentence, Span
+from promptner.errors import ErrorCode, LlmError
 from promptner.llm.client import ChatRequest, LlmClient
 from promptner.pipeline.predict import predict_many, predict_sentence
 
@@ -159,3 +160,37 @@ def test_paragraph_retries_counted_once_per_paragraph():
         workers=1,
     )
     assert [p.retries for p in preds] == [0, 0, 0] and not any(p.parse_ok for p in preds)
+
+
+class _EmptyThenClient(LlmClient):
+    """Wirft n-mal die Leere-Antwort-Fehlermeldung, danach liefert es die Antworten."""
+
+    def __init__(self, empty_times, answers=()):
+        self._empty_left = empty_times
+        self._answers = list(answers)
+        self.calls_made = 0
+
+    def complete(self, request):
+        self.calls_made += 1
+        if self._empty_left > 0:
+            self._empty_left -= 1
+            raise LlmError(ErrorCode.LLM_EMPTY_RESPONSE)
+        return self._answers.pop(0)
+
+
+@pytest.mark.unit
+def test_empty_response_is_retried_like_broken_format():
+    """Eine leere Antwort ist ein Formatbruch und kein Grund, das Experiment abzubrechen."""
+    client = _EmptyThenClient(empty_times=1, answers=[GOOD])
+    p = predict_sentence(SENT, CFG, client)
+    assert p.parse_ok and p.retries == 1
+    assert p.spans == [Span(start=0, end=1, label="LOC")]
+    assert client.calls_made == 2
+
+
+@pytest.mark.unit
+def test_persistently_empty_response_marks_parse_failure():
+    """Bleibt die Antwort leer, gilt der Satz als 'keine Entitaeten' - der Lauf laeuft weiter."""
+    client = _EmptyThenClient(empty_times=5)
+    p = predict_sentence(SENT, CFG, client)
+    assert p.parse_ok is False and p.spans == [] and p.raw == ""
