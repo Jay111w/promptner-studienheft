@@ -137,3 +137,30 @@ Es meldet:
 Ein Span-F1 unter etwa 0,80 heißt meist nicht, dass jemand geschludert hat, sondern dass die
 Richtlinien oben eine Lücke haben – dann Regel ergänzen und die betroffenen Sätze nachziehen.
 Der Bericht in `results/annotator-agreement.md` wird bei jedem Lauf neu geschrieben.
+
+## Was dabei herauskam (nachträglich, Stand 25.09.2026)
+
+Beide Blöcke sind annotiert, die Übereinstimmung auf den 20 gemeinsamen Sätzen lag bei
+**Span-F1 0.489** und **Kappa 0.415**, 19 von 20 Sätzen uneinig. Nach dem Satz weiter oben heißt
+das nicht, dass jemand geschludert hat, sondern dass die Richtlinien eine Lücke haben – hier
+allerdings eher, dass die Regeln oben **nicht angewandt** wurden. Drei Muster, bei beiden:
+
+| Muster | Beispiel | Was die Regel oben sagt |
+|---|---|---|
+| Gattungsbegriff als Entität | `Vision`, `Verwaltungsleistungen`, `Erwartungshaltung`, `Bund` (einmal ORG, einmal LOC) | „Nur **Eigennamen**, keine Gattungsbegriffe"; `der Bund` ist ausdrücklich keine Entität |
+| Adjektiv innerhalb der Grenze | `rechtlichen Grundlagen`, `staatliche Onlinedienste`, `öffentliche Verwaltung` | Artikel gehören nicht dazu, Ableitungen sind keine Entität |
+| Rollenbezeichnung als `PER` | `Bürgerinnen`, `Bürgern` | zu PER: „nicht: die Bundeskanzlerin" |
+
+Weil eine zweite Klickrunde zeitlich nicht mehr drin war, setzt `scripts/build_gold.py` die
+Richtlinien maschinell durch – dieselben Regeln für beide, deterministisch, protokolliert in
+`results/richtlinien-normalisierung.md`. Danach: **Span-F1 0.857**, **Kappa 0.853**, 3 uneinige
+Sätze. Von 279 annotierten Spans bleiben 79 übrig, also etwa 0,5 Entitäten je Satz – genau die
+Dichte, die oben für 100 Sätze geschätzt war.
+
+Beides gehört in den Bericht, die rohe Zahl zuerst. Die maschinelle Fassung ist keine Adjudikation
+zweier Menschen, sondern eine Korrektur der Regelanwendung, und ihre Regeln sind nach Sicht der
+Daten entstanden.
+
+**Für eine nächste Runde**, falls doch noch Zeit ist: nicht neu annotieren, sondern die drei Muster
+oben vorab an je zwei Beispielen durchsprechen. Das kostet zehn Minuten und hätte die 0.489
+vermutlich gar nicht entstehen lassen.

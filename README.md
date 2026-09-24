@@ -88,10 +88,37 @@ ausgenommen.
 
 ```bash
 uv run scripts/annotate_template.py heft.pdf --pages 5-12 --out data/studienheft/raw.jsonl
-# annotieren nach data/studienheft/ANNOTATION.md -> data/studienheft/gold.jsonl
-uv run promptner agreement --a gold_a.jsonl --b gold_b.jsonl   # Uebereinstimmung der 20 gemeinsamen Saetze
+uv run scripts/preannotate.py --inp data/studienheft/raw.jsonl --out data/studienheft/vorschlag.jsonl
+uv run scripts/split_annotation.py --vorschlag data/studienheft/vorschlag.jsonl
+# beschriften in tools/annotations-oberflaeche/, Ausgabe je Person als JSON
+uv run scripts/import_annotation.py --datei annotation_joshua.json    # JSON -> JSONL
+uv run promptner agreement --a data/studienheft/gold_gemeinsam_joshua.jsonl \
+                           --b data/studienheft/gold_gemeinsam_alireza.jsonl
+uv run scripts/build_gold.py                                          # -> data/studienheft/gold.jsonl
 uv run promptner run --experiment E2 --datasets studienheft
 ```
+
+### Übereinstimmung: zwei Zahlen, und warum
+
+| | Span-F1 | Kappa (Token) | uneinige Sätze |
+|---|---|---|---|
+| wie annotiert | **0.489** | 0.415 | 19 von 20 |
+| nach Durchsetzung der Richtlinien | **0.857** | 0.853 | 3 von 20 |
+
+Die erste Zeile ist die Zahl, die zwei Menschen erzeugt haben, und sie bleibt die Zahl für den
+Bericht. Die Lücke zur zweiten Zeile ist der eigentliche Befund: Die Uneinigkeit war keine
+Streuung zweier Urteile, sondern dreifache Abweichung von den vorab festgelegten Richtlinien –
+Gattungsbegriffe als Entität (`Vision`, `Verwaltungsleistungen`, `Bund`), Adjektive innerhalb der
+Span-Grenze (`rechtlichen Grundlagen` statt `Grundlagen`), Rollenbezeichnungen als `PER`
+(`Bürgerinnen`). Beide Annotatoren, in unterschiedliche Richtungen.
+
+`scripts/build_gold.py` setzt die Richtlinien deshalb maschinell durch (Regeln in
+`src/promptner/data/normalize.py`, Protokoll in `results/richtlinien-normalisierung.md`) statt eine
+zweite Klickrunde zu verlangen. Das ist **keine menschliche Adjudikation**: die Regeln sind nach
+Sicht der Daten formuliert, und das Lexikon nennt die Eigennamen dieser Quelle beim Namen. Was es
+ist: eine Korrektur der Regelanwendung, für beide Annotationen identisch und damit ohne Schlagseite.
+Die drei verbleibenden Differenzen sind Auslassungen von Abkürzungen (`OZG`, `EU`, `OZGÄndG`) bei
+einem der beiden.
 
 ## Aufbau
 
