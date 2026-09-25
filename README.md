@@ -56,6 +56,17 @@ Prompts werden aus dem Antwort-Cache (`.cache/llm`) bedient, abgebrochene Läufe
 | E9 | Klassische Baseline | `scripts/train_bert.py` (BERT + Linear-Kopf, lokal; `--dataset germeval14 --model bert-base-german-cased` für die deutsche Referenz) |
 | E10 | Sätze je Aufruf | `paragraph_size` ∈ {1, 2, 3, 5} |
 
+### Was die 150 Sätze bedeuten (wichtig für E1)
+
+`limit=150` nimmt den **Kopf** des Splits, nicht eine Stichprobe. Das hält alle Experimente
+vergleichbar, macht aber Vergleiche *zwischen* Splits unsauber, sobald die Typmischung kippt: die
+ersten 150 Sätze von CoNLL-Test sind Fußball-Spielberichte (176 `PER`, 16 `ORG`), die von
+CoNLL-Validation Vereinsmeldungen (78 `PER`, 95 `ORG`). Weil `PER` die leichteste und `ORG` die
+schwerste Kategorie ist, steht E1 auf dem Test-Split mit **0.923** über E2 auf Validation
+(**0.816**) – je Typ ist das Modell dort nicht besser (`ORG` 0.80 gegen 0.88), die Aggregatzahl
+folgt der Mischung. Im Bericht gehört die Zahl deshalb mit diesem Satz daneben, nicht als „auf dem
+Test-Set ist es leichter".
+
 ```bash
 uv run promptner run --experiment E4 --dry-run          # nur auflisten
 uv run promptner run --experiment E4                    # Standard: 150 Sätze, Seeds 1,2, 2 Sätze je Aufruf
@@ -119,6 +130,21 @@ Sicht der Daten formuliert, und das Lexikon nennt die Eigennamen dieser Quelle b
 ist: eine Korrektur der Regelanwendung, für beide Annotationen identisch und damit ohne Schlagseite.
 Die drei verbleibenden Differenzen sind Auslassungen von Abkürzungen (`OZG`, `EU`, `OZGÄndG`) bei
 einem der beiden.
+
+### Und was das Modell auf diesem Sample macht
+
+E2 auf dem Studienheft: **F1 0.551** bei Precision 0.431 und Recall 0.766 – das Modell findet die
+Entitäten, markiert aber 142 Spans, wo das Gold 79 hat. Die Fehlalarme sind nicht beliebig:
+**61 % von ihnen (50 von 82) sind genau die Oberflächen, die auch aus den Menschenannotationen
+entfernt wurden**, und unter den zehn häufigsten sind es alle zehn – `Bund`, `Länder`, `Kommunen`,
+`E-Government`, `Gesetz`, `Verwaltung`. Derselbe Fehler, dieselben Wörter: die Grenze zwischen
+Eigenname und Gattungsbegriff ist in diesem Fachtext das eigentliche Problem, für ein gepromptetes
+Modell wie für zwei Menschen.
+
+Grenztoleranz (Überlappung statt exakter Grenze) hebt das Studienheft auf 0.615 und GermEval auf
+0.711, CoNLL dagegen nur um 0.007 – die deutschen Sätze kosten also zusätzlich Punkte an
+Komposita und nachgestellten Klammern, aber der Präzisionseinbruch bleibt auch dann bestehen
+(0.479). Er ist echte Übergenerierung, kein Grenzstreit.
 
 ## Aufbau
 
