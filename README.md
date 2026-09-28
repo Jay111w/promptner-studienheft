@@ -168,8 +168,7 @@ Drei Abweichungen vom Paper sind bewusst gewählt. Die Few-Shot-Beispiele stehen
 Frage-Antwort-Turns im Chatverlauf statt in einer einzigen Nachricht, weil das Modell sonst die
 Beispiele noch einmal beantwortet. Statt GPT-4 laufen offene Modelle über den Uni-Endpunkt. Und
 ein Aufruf verarbeitet zwei Sätze statt einen, was die Kosten halbiert und ein halbes F1 kostet;
-die Messreihe dazu steht in `results/summary.csv` unter E10. Regeln für Mitarbeit und Agenten:
-`AGENTS.md`.
+die Messreihe dazu steht in `results/summary.csv` unter E10.
 
 ## Lizenz
 

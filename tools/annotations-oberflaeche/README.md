@@ -1,9 +1,8 @@
 # Annotations-Oberfläche
 
 Die Klick-Oberfläche, mit der die Studienheft-Sätze beschriftet werden, statt JSON von Hand zu
-bearbeiten. Veröffentlicht als Claude-Artefakt unter
-<https://claude.ai/artifact/LS5uMUzvsRCrPMwTwrvUuL>; diese Kopie liegt hier, damit die Quelle im
-Repo nachvollziehbar bleibt und nicht nur in der Veröffentlichung existiert.
+bearbeiten. Sie ist eine einzelne HTML-Seite ohne Server und lässt sich direkt im Browser öffnen
+oder über einen beliebigen statischen Webserver ausliefern.
 
 ## Die zwei Dateien
 
@@ -42,15 +41,15 @@ with open("tools/annotations-oberflaeche/saetze.json", "w", encoding="utf-8") as
     json.dump(out, fh, ensure_ascii=False, separators=(",", ":"))
 ```
 
-Danach beide Dateien neu veröffentlichen, die Seite als Seite und `saetze.json` als begleitende
-Datei unter genau diesem Namen.
+Danach liegen beide Dateien nebeneinander im selben Verzeichnis, `saetze.json` unter genau diesem
+Namen, weil die Seite sie relativ zu sich selbst lädt.
 
 ## Wo die Arbeit liegt
 
-Im `localStorage` des jeweiligen Browsers, je Annotator ein Eintrag. Das ist Absicht: Ein Artefakt
-mit gemeinsamer Datenbank lässt sich nur innerhalb einer Organisation teilen, und die beiden
-Annotatoren arbeiten von verschiedenen Konten aus. Der Nebeneffekt passt zur Methodik, weil der
-gemeinsame Block ohnehin unabhängig bearbeitet werden muss.
+Im `localStorage` des jeweiligen Browsers, je Annotator ein Eintrag. Das ist Absicht, denn eine
+gemeinsame Datenbank hätte einen Server verlangt, und die beiden Annotatoren arbeiten ohnehin an
+verschiedenen Rechnern. Der Nebeneffekt passt zur Methodik, weil der gemeinsame Block unabhängig
+bearbeitet werden muss.
 
 Der Preis ist der Rückweg: Über „Als Datei sichern“ oder „In die Zwischenablage“ gibt jeder seinen
 Stand als JSON heraus, das dann zu `gold_<name>.jsonl` und `gold_gemeinsam_<name>.jsonl` wird.
