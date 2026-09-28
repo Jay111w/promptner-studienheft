@@ -33,12 +33,15 @@ jobs:
       - name: Abhaengigkeiten installieren
         run: uv sync --extra demo --python ${{ matrix.python-version }}
 
+      # --python und --extra muessen hier stehen. Ohne sie zieht "uv run" die
+      # Version aus .python-version (3.12) und baut die Umgebung neu auf, wobei
+      # das Demo-Extra und damit PySide6 wegfaellt.
       - name: Lint
         run: |
-          uv run ruff check src tests
-          uv run ruff format --check src tests
+          uv run --python ${{ matrix.python-version }} ruff check src tests
+          uv run --python ${{ matrix.python-version }} ruff format --check src tests
 
       - name: Tests (Fake-LLM, kein Key)
         env:
           QT_QPA_PLATFORM: offscreen
-        run: uv run pytest -m "not live and not network"
+        run: uv run --extra demo --python ${{ matrix.python-version }} pytest -m "not live and not network"
