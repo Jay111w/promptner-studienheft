@@ -18,8 +18,12 @@ Entity-Level-F1 bewertet.
 
 ## Schnellstart
 
+Vorausgesetzt werden Python >= 3.11 und [uv](https://docs.astral.sh/uv/) als Paketmanager
+(`curl -LsSf https://astral.sh/uv/install.sh | sh`, unter Windows siehe dortige Anleitung).
+
 ```bash
-uv sync --extra demo                           # Python >= 3.11, --extra demo nur fuer die PySide6-Oberflaeche
+git clone https://github.com/Jay111w/promptner-studienheft.git && cd promptner-studienheft
+uv sync --extra demo                           # legt die Umgebung an, --extra demo nur fuer die PySide6-Oberflaeche
 uv run pytest -m "not live and not network"    # 243 Tests, ohne Netz und ohne Key
 ```
 
@@ -43,7 +47,41 @@ CACHE_DIR=replay-cache RESULTS_DIR=nachgespielt uv run promptner run --experimen
 ```
 
 Das ist der empfohlene Weg zum Nachvollziehen. Parser, Alignment, Metrik und Aggregation laufen
-vollständig durch, nur der Netzaufruf entfällt. Geprüft in einem frischen Klon ohne `.env`.
+vollständig durch, nur der Aufruf des Sprachmodells entfällt. Geprüft in einem frischen Klon ohne
+`.env`. CoNLL-2003 und GermEval 2014 werden dabei beim ersten Lauf automatisch von Hugging Face
+geladen, dafür ist einmalig eine Internetverbindung nötig; danach liegen sie im lokalen Cache.
+
+Jede Tabelle des schriftlichen Berichts lässt sich so einzeln nachrechnen. Vor jeden Befehl gehört
+dabei `CACHE_DIR=replay-cache RESULTS_DIR=nachgespielt`, damit aus der Kopie gerechnet und nichts
+überschrieben wird.
+
+| Im Bericht | Befehl |
+|---|---|
+| Tabelle 1, Annotatorenübereinstimmung | `uv run promptner agreement …`, siehe [Eigenes Sample](#eigenes-sample) |
+| Tabelle 2, Test-Splits | `uv run promptner run --experiment E1` |
+| Tabelle 3, Ablation der Prompt-Bausteine | `uv run promptner run --experiment E4`, ebenso E5, E6, E7 mit `--seeds 1,2,3` |
+| Tabelle 4, Modellgröße | `uv run promptner run --experiment E3 --models qwen3.8-27b,mistral-medium-3.5-128b,qwen3.5-397b-a17b` |
+| Tabelle 5, Sprache und Domäne | `uv run promptner run --experiment E2` |
+| Tabelle 6, trainierte Baseline | `uv run --extra bert scripts/train_bert.py` gegen `--experiment E2` |
+| Tabellen 7 und 8, Fehlerklassen | `uv run promptner errors --run <run_id>` |
+| Ausgabeformat und Retry | `uv run promptner run --experiment E8` |
+| Sätze je Aufruf | `uv run promptner run --experiment E10 --limit 100` |
+
+Alle Prompting-Läufe des Berichts nacheinander, jeweils mit den Seeds und Stichprobengrößen, aus
+denen die berichteten Zahlen stammen (`scripts/night.sh` setzt am Ende `summary` und `plots`
+hinterher und braucht macOS wegen `caffeinate`, sonst die Einzelbefehle von oben verwenden):
+
+```bash
+export CACHE_DIR=replay-cache RESULTS_DIR=nachgespielt
+scripts/night.sh E1 E2 E8                  # zwei Seeds, 150 Saetze
+SEEDS=1,2,3 scripts/night.sh E4 E5 E6 E7   # die Ablationen, drei Seeds
+SEEDS=1 EXTRA="--models qwen3.8-27b,mistral-medium-3.5-128b,qwen3.5-397b-a17b" \
+  scripts/night.sh E3                      # Modellvergleich, ein Seed je Modell
+SEEDS=1 LIMIT=100 scripts/night.sh E10     # Saetze je Aufruf, 100 Saetze
+```
+
+Nur die BERT-Baseline (E9) liegt nicht im Cache, weil sie lokal trainiert und keinen Endpunkt
+anfragt; ihre beiden Läufe brauchen zusammen etwa anderthalb Stunden CPU-Zeit.
 
 ## Die Experimente
 
